@@ -134,8 +134,9 @@ export async function updateProductAction(
   const { sectionId, category } = await resolveSection(formData);
   const files = (formData.getAll("images") as File[]).filter((f) => f.size > 0);
   const newImagePaths = await saveProductImages(files, parsed.data.sku);
-  const existingImages = current.images ? current.images.split(",").filter(Boolean) : [];
-  const allImages = [...existingImages, ...newImagePaths];
+  // Imágenes existentes que el usuario decidió conservar, en el orden que eligió.
+  const keptImages = parseExistingImages(formData.get("existingImages"), current.images);
+  const allImages = [...keptImages, ...newImagePaths];
 
   await db.$transaction([
     db.variant.deleteMany({ where: { productId: id } }),
@@ -156,6 +157,23 @@ export async function updateProductAction(
 
   revalidatePath("/", "layout");
   redirect("/admin/productos");
+}
+
+/**
+ * Imágenes existentes a conservar (orden elegido por el usuario). Solo permite
+ * las que ya pertenecían al producto (seguridad anti-inyección de rutas).
+ */
+function parseExistingImages(raw: FormDataEntryValue | null, currentCsv: string): string[] {
+  const current = currentCsv ? currentCsv.split(",").filter(Boolean) : [];
+  if (typeof raw !== "string") return current;
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return current;
+    const allowed = new Set(current);
+    return parsed.map((x) => String(x)).filter((x) => allowed.has(x));
+  } catch {
+    return current;
+  }
 }
 
 async function resolveSection(

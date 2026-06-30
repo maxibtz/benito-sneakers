@@ -123,6 +123,83 @@ export async function getProduct(id: string) {
   return db.product.findUnique({ where: { id }, include: { variants: true, section: true } });
 }
 
+export type ProductWithStats = {
+  id: string;
+  brand: string;
+  model: string;
+  sku: string;
+  sectionId: string | null;
+  sectionName: string | null;
+  category: string;
+  active: boolean;
+  price: number;
+  salePrice: number | null;
+  effectivePrice: number;
+  cost: number;
+  unitMargin: number | null;
+  image: string | null;
+  totalStock: number;
+  unitsSold: number;
+  revenue: number;
+  cogs: number;
+  profit: number;
+  inventoryValue: number;
+};
+
+/** Productos cruzados con sus ventas reales (unidades, ingresos, costo y ganancia). */
+export async function getProductsWithStats(): Promise<ProductWithStats[]> {
+  const [products, items] = await Promise.all([
+    db.product.findMany({
+      include: { variants: true, section: true },
+      orderBy: { createdAt: "desc" },
+    }),
+    db.orderItem.findMany({
+      where: { order: { status: { not: "CANCELADO" } } },
+      select: { productId: true, quantity: true, unitPrice: true },
+    }),
+  ]);
+
+  const salesMap = new Map<string, { units: number; revenue: number }>();
+  for (const it of items) {
+    if (!it.productId) continue;
+    const prev = salesMap.get(it.productId) ?? { units: 0, revenue: 0 };
+    prev.units += it.quantity;
+    prev.revenue += it.unitPrice * it.quantity;
+    salesMap.set(it.productId, prev);
+  }
+
+  return products.map((p) => {
+    const totalStock = p.variants.reduce((s, v) => s + v.stock, 0);
+    const cost = p.cost ?? 0;
+    const effectivePrice = p.salePrice && p.salePrice < p.price ? p.salePrice : p.price;
+    const unitMargin = cost > 0 ? effectivePrice - cost : null;
+    const sales = salesMap.get(p.id) ?? { units: 0, revenue: 0 };
+    const cogs = cost * sales.units;
+    return {
+      id: p.id,
+      brand: p.brand,
+      model: p.model,
+      sku: p.sku,
+      sectionId: p.sectionId,
+      sectionName: p.section?.name ?? null,
+      category: p.category,
+      active: p.active,
+      price: p.price,
+      salePrice: p.salePrice,
+      effectivePrice,
+      cost,
+      unitMargin,
+      image: p.images?.split(",").filter(Boolean)[0] ?? null,
+      totalStock,
+      unitsSold: sales.units,
+      revenue: sales.revenue,
+      cogs,
+      profit: sales.revenue - cogs,
+      inventoryValue: cost * totalStock,
+    };
+  });
+}
+
 export async function getActiveProductsForStore() {
   return db.product.findMany({
     where: { active: true },

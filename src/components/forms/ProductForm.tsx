@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useActionState, useState } from "react";
 import type { ProductFormState } from "@/actions/products";
 
@@ -17,6 +18,7 @@ type ProductFormProps = {
     costItems: { name: string; amount: number }[];
     active: boolean;
     variants: { size: string; stock: number }[];
+    images?: string[];
   };
   submitLabel: string;
 };
@@ -37,6 +39,21 @@ export function ProductForm({ action, sections, defaultValues, submitLabel }: Pr
       ? defaultValues.costItems.map((it) => ({ name: it.name, amount: String(it.amount) }))
       : [{ name: "Compra", amount: "" }]
   );
+  // Imágenes ya cargadas (se pueden reordenar y borrar). La primera es la principal.
+  const [keptImages, setKeptImages] = useState<string[]>(defaultValues?.images ?? []);
+
+  function moveImage(i: number, dir: -1 | 1) {
+    setKeptImages((prev) => {
+      const next = prev.slice();
+      const j = i + dir;
+      if (j < 0 || j >= next.length) return prev;
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
+  }
+  function removeImage(i: number) {
+    setKeptImages((prev) => prev.filter((_, idx) => idx !== i));
+  }
 
   const priceN = Number(price) || 0;
   const saleN = Number(salePrice) || 0;
@@ -268,9 +285,68 @@ export function ProductForm({ action, sections, defaultValues, submitLabel }: Pr
         />
       </div>
 
+      {/* Imágenes ya cargadas: reordenar (la 1ª es la principal) y borrar */}
+      <input type="hidden" name="existingImages" value={JSON.stringify(keptImages)} />
+      {keptImages.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-medium text-[var(--color-navy)] dark:text-gray-200">
+            Imágenes cargadas{" "}
+            <span className="font-normal text-gray-500 dark:text-gray-400">
+              (la primera es la que se ve en la tienda)
+            </span>
+          </span>
+          <div className="flex flex-wrap gap-3">
+            {keptImages.map((src, i) => (
+              <div
+                key={src}
+                className="group relative h-24 w-24 overflow-hidden rounded-lg border border-gray-200 dark:border-white/10"
+              >
+                <Image src={src} alt={`Imagen ${i + 1}`} fill className="object-cover" sizes="96px" />
+                {i === 0 && (
+                  <span className="absolute left-1 top-1 rounded bg-[var(--color-navy)] px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                    Principal
+                  </span>
+                )}
+                <div className="absolute inset-x-0 bottom-0 flex justify-between bg-black/50 px-1 py-0.5 opacity-0 transition group-hover:opacity-100">
+                  <button
+                    type="button"
+                    onClick={() => moveImage(i, -1)}
+                    disabled={i === 0}
+                    className="text-white disabled:opacity-30"
+                    aria-label="Mover a la izquierda"
+                  >
+                    ◀
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeImage(i)}
+                    className="text-red-300 hover:text-red-100"
+                    aria-label="Quitar imagen"
+                  >
+                    🗑
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveImage(i, 1)}
+                    disabled={i === keptImages.length - 1}
+                    className="text-white disabled:opacity-30"
+                    aria-label="Mover a la derecha"
+                  >
+                    ▶
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Pasá el mouse por encima para reordenar (◀ ▶) o borrar (🗑).
+          </p>
+        </div>
+      )}
+
       <div className="flex flex-col gap-1">
         <label htmlFor="images" className="text-sm font-medium text-[var(--color-navy)] dark:text-gray-200">
-          Imágenes {defaultValues ? "(se agregan a las existentes)" : ""}
+          {defaultValues ? "Agregar más imágenes" : "Imágenes"}
         </label>
         <input
           id="images"

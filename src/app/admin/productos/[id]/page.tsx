@@ -57,6 +57,7 @@ export default async function EditProductPage({
           costItems: parseCostItems(product.costBreakdown, product.cost),
           active: product.active,
           variants: product.variants.map((v) => ({ size: v.size, stock: v.stock })),
+          images: product.images?.split(",").filter(Boolean) ?? [],
         }}
       />
     </div>
