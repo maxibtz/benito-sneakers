@@ -66,17 +66,32 @@ export function ProductForm({ action, sections, defaultValues, submitLabel }: Pr
     .map((v) => `${v.size}, ${v.stock}`)
     .join("\n");
 
+  // Si hubo error, el server nos devuelve lo cargado (state.values) para no perderlo.
+  const ev = state.values;
+  const dvBrand = ev?.brand ?? defaultValues?.brand;
+  const dvModel = ev?.model ?? defaultValues?.model;
+  const dvDescription = ev?.description ?? defaultValues?.description;
+  const dvSku = ev?.sku ?? defaultValues?.sku;
+  const dvSectionId = ev?.sectionId ?? defaultValues?.sectionId ?? "";
+  const dvVariants = ev?.variants ?? variantsText;
+  const dvActive = ev?.active ?? defaultValues?.active ?? true;
+
   return (
     <form action={formAction} className="flex max-w-2xl flex-col gap-5">
+      {state.error && (
+        <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-300">
+          ⚠️ {state.error}
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Marca" name="brand" defaultValue={defaultValues?.brand} required />
-        <Field label="Modelo" name="model" defaultValue={defaultValues?.model} required />
+        <Field label="Marca" name="brand" defaultValue={dvBrand} required />
+        <Field label="Modelo" name="model" defaultValue={dvModel} required />
       </div>
 
       <Field
         label="Descripción"
         name="description"
-        defaultValue={defaultValues?.description}
+        defaultValue={dvDescription}
         textarea
         required
       />
@@ -89,7 +104,7 @@ export function ProductForm({ action, sections, defaultValues, submitLabel }: Pr
           <select
             id="sectionId"
             name="sectionId"
-            defaultValue={defaultValues?.sectionId ?? ""}
+            defaultValue={dvSectionId}
             className="rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none focus:border-[var(--color-navy)] dark:border-gray-600 dark:bg-white/5 dark:text-white"
           >
             <option value="">— Sin sección —</option>
@@ -105,7 +120,7 @@ export function ProductForm({ action, sections, defaultValues, submitLabel }: Pr
             </span>
           )}
         </div>
-        <Field label="SKU" name="sku" defaultValue={defaultValues?.sku} required />
+        <Field label="SKU" name="sku" defaultValue={dvSku} required />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -247,7 +262,7 @@ export function ProductForm({ action, sections, defaultValues, submitLabel }: Pr
           name="variants"
           rows={6}
           required
-          defaultValue={variantsText}
+          defaultValue={dvVariants}
           placeholder={"38, 5\n39, 3\n40, 8"}
           className="rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm text-gray-900 outline-none focus:border-[var(--color-navy)] dark:border-gray-600 dark:bg-white/5 dark:text-white"
         />
@@ -271,7 +286,7 @@ export function ProductForm({ action, sections, defaultValues, submitLabel }: Pr
         <input
           type="checkbox"
           name="active"
-          defaultChecked={defaultValues?.active ?? true}
+          defaultChecked={dvActive}
           className="h-4 w-4"
         />
         Producto visible en la tienda

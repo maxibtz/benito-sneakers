@@ -7,13 +7,43 @@ import { requireAdmin } from "@/lib/auth";
 import { productSchema, parseVariants } from "@/lib/validation";
 import { saveProductImages } from "@/lib/uploads";
 
-export type ProductFormState = { error?: string };
+export type EchoValues = {
+  brand: string;
+  model: string;
+  description: string;
+  sku: string;
+  sectionId: string;
+  variants: string;
+  active: boolean;
+};
+
+export type ProductFormState = { error?: string; values?: EchoValues };
+
+/** Devuelve lo que el usuario cargó, para repoblar el form si hay error. */
+function echoValues(formData: FormData): EchoValues {
+  return {
+    brand: String(formData.get("brand") ?? ""),
+    model: String(formData.get("model") ?? ""),
+    description: String(formData.get("description") ?? ""),
+    sku: String(formData.get("sku") ?? ""),
+    sectionId: String(formData.get("sectionId") ?? ""),
+    variants: String(formData.get("variants") ?? ""),
+    active: formData.get("active") === "on",
+  };
+}
+
+/** Junta TODOS los mensajes de error de validación en un texto claro. */
+function allErrors(parsed: { error: { issues: { message: string }[] } }): string {
+  const msgs = [...new Set(parsed.error.issues.map((i) => i.message))];
+  return "Faltan o hay errores en: " + msgs.join(" · ");
+}
 
 export async function createProductAction(
   _prevState: ProductFormState,
   formData: FormData
 ): Promise<ProductFormState> {
   await requireAdmin();
+  const values = echoValues(formData);
   const parsed = productSchema.safeParse({
     brand: formData.get("brand"),
     model: formData.get("model"),
@@ -27,17 +57,17 @@ export async function createProductAction(
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
+    return { error: allErrors(parsed), values };
   }
 
   const variants = parseVariants(String(formData.get("variants") ?? ""));
   if (variants.length === 0) {
-    return { error: "Agregá al menos un talle con su stock." };
+    return { error: "Agregá al menos un talle con su stock (ej: 38, 5).", values };
   }
 
   const existing = await db.product.findUnique({ where: { sku: parsed.data.sku } });
   if (existing) {
-    return { error: "Ya existe un producto con ese SKU." };
+    return { error: `Ya existe un producto con el SKU "${parsed.data.sku}". Usá otro.`, values };
   }
 
   const { salePrice: rawSale, cost: _ignored, ...rest } = parsed.data;
@@ -71,6 +101,7 @@ export async function updateProductAction(
   formData: FormData
 ): Promise<ProductFormState> {
   await requireAdmin();
+  const values = echoValues(formData);
   const parsed = productSchema.safeParse({
     brand: formData.get("brand"),
     model: formData.get("model"),
@@ -84,17 +115,17 @@ export async function updateProductAction(
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
+    return { error: allErrors(parsed), values };
   }
 
   const variants = parseVariants(String(formData.get("variants") ?? ""));
   if (variants.length === 0) {
-    return { error: "Agregá al menos un talle con su stock." };
+    return { error: "Agregá al menos un talle con su stock (ej: 38, 5).", values };
   }
 
   const current = await db.product.findUnique({ where: { id } });
   if (!current) {
-    return { error: "Producto no encontrado." };
+    return { error: "Producto no encontrado.", values };
   }
 
   const { salePrice: rawSale, cost: _ignored, ...rest } = parsed.data;
