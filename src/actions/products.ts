@@ -18,7 +18,7 @@ export async function createProductAction(
     brand: formData.get("brand"),
     model: formData.get("model"),
     description: formData.get("description"),
-    category: formData.get("category"),
+    category: formData.get("category") ?? undefined,
     sku: formData.get("sku"),
     price: formData.get("price"),
     salePrice: formData.get("salePrice"),
@@ -60,7 +60,8 @@ export async function createProductAction(
     },
   });
 
-  revalidatePath("/admin/productos");
+  // Refresca TODA la web (panel + tienda) para que el producto aparezca al instante.
+  revalidatePath("/", "layout");
   redirect("/admin/productos");
 }
 
@@ -74,7 +75,7 @@ export async function updateProductAction(
     brand: formData.get("brand"),
     model: formData.get("model"),
     description: formData.get("description"),
-    category: formData.get("category"),
+    category: formData.get("category") ?? undefined,
     sku: formData.get("sku"),
     price: formData.get("price"),
     salePrice: formData.get("salePrice"),
@@ -122,7 +123,7 @@ export async function updateProductAction(
     }),
   ]);
 
-  revalidatePath("/admin/productos");
+  revalidatePath("/", "layout");
   redirect("/admin/productos");
 }
 
@@ -169,11 +170,11 @@ function parseCostBreakdown(raw: FormDataEntryValue | null): {
 export async function deleteProductAction(id: string) {
   await requireAdmin();
   await db.product.delete({ where: { id } });
-  revalidatePath("/admin/productos");
+  revalidatePath("/", "layout");
 }
 
 export async function toggleProductActiveAction(id: string, active: boolean) {
   await requireAdmin();
   await db.product.update({ where: { id }, data: { active } });
-  revalidatePath("/admin/productos");
+  revalidatePath("/", "layout");
 }
