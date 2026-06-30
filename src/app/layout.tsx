@@ -25,6 +25,11 @@ export const metadata: Metadata = {
     "Zapatillas alternativas, modelos únicos y stock limitado. Encontrá tu próximo par favorito en Benito Sneakers.",
 };
 
+// Toda la app se renderiza en el momento (no se pre-genera en el build).
+// Necesario porque la base de datos vive en el disco persistente, que en el
+// build todavía no está montado. Evita el error "directory does not exist".
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({
   children,
 }: Readonly<{
