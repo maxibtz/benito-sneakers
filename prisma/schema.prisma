@@ -1,0 +1,255 @@
+// Benito Sneakers — database schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+model Section {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  order     Int       @default(0)
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  products  Product[]
+}
+
+model Product {
+  id          String    @id @default(cuid())
+  brand       String
+  model       String
+  description String
+  category    String
+  section     Section?  @relation(fields: [sectionId], references: [id])
+  sectionId   String?
+  sku         String    @unique
+  price       Float // precio real / de lista
+  salePrice   Float? // precio promocional (si existe, se cobra este)
+  cost        Float?    @default(0) // costo total del producto (suma de costBreakdown)
+  costBreakdown String  @default("[]") // [{name, amount}] ej: flete, pase, envío
+  images      String // comma-separated URLs / filenames
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  variants    Variant[]
+  orderItems  OrderItem[]
+}
+
+model Variant {
+  id        String   @id @default(cuid())
+  size      String // talle
+  stock     Int      @default(0)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  orderItems OrderItem[]
+
+  @@unique([productId, size])
+}
+
+enum OrderStatus {
+  NUEVO
+  EN_PREPARACION
+  ENVIADO
+  ENTREGADO
+  CANCELADO
+}
+
+enum PaymentMethod {
+  MERCADOPAGO
+  TRANSFERENCIA
+  EFECTIVO
+  LINK_TARJETA
+  PAGO_FACIL_RAPIPAGO
+}
+
+model Customer {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  phone        String?
+  createdAt    DateTime  @default(now())
+  lastLoginAt  DateTime?
+  emailVerified Boolean  @default(false)
+  verifyCode   String?
+  resetToken   String?
+  resetExpires DateTime?
+  orders       Order[]
+}
+
+model SiteSettings {
+  id            String   @id @default("default")
+  whatsapp        String @default("")
+  whatsappMessage String @default("")
+  instagram       String @default("")
+  tiktok          String @default("")
+  transferAlias   String @default("")
+  storeBg       String   @default("#0a0f24")
+  storeAccent   String   @default("#8b6dff")
+  storeFont     String   @default("moderna")
+  mpAccessToken String   @default("")
+  mpPublicKey   String   @default("")
+  smtpUser      String   @default("") // cuenta gmail para enviar mails
+  smtpPass      String   @default("") // app password de gmail
+  mailFromName  String   @default("Benito Sneakers")
+  heroProductId String   @default("") // producto destacado en la portada
+  heroImage     String   @default("") // banner custom (si se carga, tiene prioridad)
+  heroTitle     String   @default("")
+  heroSubtitle  String   @default("")
+  heroBadge     String   @default("") // texto chiquito arriba del título
+  heroCtaText   String   @default("") // texto del botón principal
+  heroCtaLink   String   @default("") // link del botón principal
+
+  // Envío
+  shipPackageWeight Float   @default(1) // kg
+  shipPackageL      Int     @default(30) // cm
+  shipPackageW      Int     @default(20)
+  shipPackageH      Int     @default(15)
+  shipOriginCp      String  @default("3600") // Formosa capital
+  shipFreeThreshold Float   @default(0) // envío gratis desde este monto (0 = sin umbral)
+  shipDefaultRate   Float   @default(0) // tarifa para provincias sin valor cargado
+  shipRates         String  @default("{}") // JSON { provincia: costo }
+  pickupEnabled     Boolean @default(true)
+  pickupProvince    String  @default("Formosa") // provincia habilitada para retiro
+  pickupNote        String  @default("")
+
+  updatedAt     DateTime @updatedAt
+}
+
+// Contenido editable de la home (singleton). Las listas se guardan como JSON.
+model HomeContent {
+  id String @id @default("default")
+
+  // Toggles de cada bloque
+  showBenefits     Boolean @default(true)
+  showFeatured     Boolean @default(true)
+  showProblemSol   Boolean @default(true)
+  showTestimonials Boolean @default(true)
+  showCategories   Boolean @default(true)
+  showDifferentials Boolean @default(true)
+  showUgc          Boolean @default(true)
+  showFaq          Boolean @default(true)
+  showFinalCta     Boolean @default(true)
+
+  // 2 — Beneficios rápidos
+  benefitsTitle String @default("")
+  benefits      String @default("[]") // [{icon,title,desc}]
+
+  // 3 — Productos destacados
+  featuredTitle    String @default("Nuestros modelos")
+  featuredSubtitle String @default("")
+
+  // 4 — Problema → Solución
+  psTitle    String @default("")
+  psSubtitle String @default("")
+  psItems    String @default("[]") // [{problem,solution}]
+
+  // 5 — Prueba social (testimonios)
+  testimonialsTitle    String @default("")
+  testimonialsSubtitle String @default("")
+  testimonials         String @default("[]") // [{name,role,text,rating}]
+
+  // 6 — Categorías principales
+  categoriesTitle    String @default("")
+  categoriesSubtitle String @default("")
+  categories         String @default("[]") // [{label,brand}]
+
+  // 7 — Diferenciales de marca
+  differentialsTitle    String @default("")
+  differentialsSubtitle String @default("")
+  differentials         String @default("[]") // [{icon,title,desc}]
+
+  // 8 — UGC / contenido real
+  ugcTitle    String @default("")
+  ugcSubtitle String @default("")
+  ugcImages   String @default("") // comma-separated paths
+
+  // 9 — Preguntas frecuentes
+  faqTitle    String @default("")
+  faqSubtitle String @default("")
+  faqs        String @default("[]") // [{q,a}]
+
+  // 10 — CTA final
+  finalCtaTitle  String @default("")
+  finalCtaText   String @default("")
+  finalCtaButton String @default("")
+  finalCtaLink   String @default("")
+
+  updatedAt DateTime @updatedAt
+}
+
+model Coupon {
+  id              String    @id @default(cuid())
+  code            String    @unique
+  discountPercent Int       @default(0)
+  enabled         Boolean   @default(true)
+  expiresAt       DateTime?
+  createdAt       DateTime  @default(now())
+}
+
+model Promotion {
+  id              String    @id @default("default")
+  enabled         Boolean   @default(false)
+  title           String    @default("")
+  message         String    @default("")
+  couponCode      String    @default("")
+  discountPercent Int       @default(0)
+  ctaText         String    @default("")
+  ctaLink         String    @default("")
+  endsAt          DateTime?
+  updatedAt       DateTime  @updatedAt
+}
+
+model Order {
+  id            String        @id @default(cuid())
+  customer      Customer?     @relation(fields: [customerId], references: [id])
+  customerId    String?
+  customerName  String
+  email         String
+  phone         String
+  street        String
+  streetNumber  String
+  floorApt      String?
+  city          String
+  province      String
+  postalCode    String
+  dni           String
+  total         Float
+  discount      Float         @default(0)
+  shippingCost  Float         @default(0)
+  shippingMethod String       @default("delivery") // delivery | pickup
+  couponCode    String?
+  status        OrderStatus   @default(NUEVO)
+  paymentMethod PaymentMethod
+  paymentStatus String        @default("pending") // pending | approved | in_process | rejected
+  paymentRef    String? // mercadopago payment id, if applicable
+  preferenceId  String? // mercadopago preference id
+  trackingCode  String? // código de seguimiento del correo
+  trackingSentAt DateTime? // cuándo se avisó por email
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  items         OrderItem[]
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+  variant   Variant @relation(fields: [variantId], references: [id])
+  variantId String
+  quantity  Int
+  unitPrice Float
+}

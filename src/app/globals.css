@@ -1,0 +1,156 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #f7f6f3;
+  --foreground: #16151a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-display), "Geist", sans-serif;
+
+  /* Benito Sneakers — neutral minimal palette (vetacrea-inspired) */
+  --color-paper: #f7f6f3;
+  --color-paper-soft: #efece6;
+  --color-ink: #16151a;
+  --color-ink-soft: #565259;
+  --color-surface-dark: #131217;
+  --color-surface-dark-soft: #1c1b21;
+
+  /* Lilac accent (single brand color) */
+  --color-lilac: #b9a6ff;
+  --color-lilac-light: #d8cdff;
+  --color-lilac-vivid: #8b6dff;
+
+  /* Store night-blue theme (matches product photo backdrop) */
+  --color-store-bg: #0a0f24;
+  --color-store-glow: #18224d;
+  --color-store-ink: #eef0fb;
+  --color-store-muted: #9aa1c4;
+  --color-store-surface: #121a3a;
+  --color-store-surface-2: #18204a;
+
+  /* legacy brand tokens kept for the admin panel */
+  --color-navy: #0b1340;
+  --color-navy-light: #16205c;
+  --color-navy-deep: #070b24;
+  --color-skyblue: #7fc4ff;
+  --color-brand-white: #ffffff;
+  --color-brand-black: #0a0a0a;
+}
+
+/* Store backdrop — radial gradient (glow tinted by the chosen accent) that the
+   shoe photos melt into. Driven by --color-store-bg + --color-lilac-vivid. */
+.store-bg {
+  background: radial-gradient(
+    120% 90% at 50% 22%,
+    color-mix(in srgb, var(--color-store-bg) 70%, var(--color-lilac-vivid)) 0%,
+    color-mix(in srgb, var(--color-store-bg) 88%, var(--color-lilac-vivid)) 40%,
+    var(--color-store-bg) 100%
+  );
+  background-attachment: fixed;
+}
+
+/* Fade product photo edges into the backdrop for a floating illusion */
+.shoe-blend {
+  -webkit-mask-image: radial-gradient(
+    ellipse 72% 72% at 50% 46%,
+    #000 52%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(ellipse 72% 72% at 50% 46%, #000 52%, transparent 100%);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+::selection {
+  background: var(--color-lilac);
+  color: var(--color-navy);
+}
+
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-lilac-vivid);
+  outline-offset: 2px;
+}
+
+/* Display headline utility — calm, modern, normal-case */
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.025em;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+/* Animations */
+@keyframes pop {
+  0% {
+    transform: scale(0.6);
+  }
+  60% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 28s linear infinite;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee,
+  .animate-fade-up {
+    animation: none;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
