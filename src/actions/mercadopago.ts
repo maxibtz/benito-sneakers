@@ -5,6 +5,12 @@ import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { getMpPreferenceClient, getMpPaymentClient, getAppUrl } from "@/lib/mercadopago";
 
+/** El monto pagado cubre el total (con tolerancia de $1 por redondeos). */
+function amountCoversTotal(paid: number | undefined, total: number): boolean {
+  if (typeof paid !== "number") return false;
+  return paid >= Math.round(total) - 1;
+}
+
 export type MpPreferenceResult =
   | { ok: true; initPoint: string }
   | { ok: false; error: string };
@@ -107,8 +113,15 @@ export async function syncMpPaymentByOrder(orderId: string): Promise<string | nu
     // Priorizamos un pago aprobado; si no, tomamos el más reciente.
     const approved = results.find((p) => p.status === "approved");
     const chosen = approved ?? results[0];
-    const status = chosen.status;
+    let status = chosen.status;
     if (!status) return null;
+
+    // Un pago "aprobado" solo cuenta si cubre el total del pedido.
+    const order = await db.order.findUnique({ where: { id: orderId }, select: { total: true } });
+    if (order && status === "approved" && !amountCoversTotal(chosen.transaction_amount, order.total)) {
+      console.warn(`[mercadopago] pago ${chosen.id} no cubre el total del pedido ${orderId}`);
+      status = "amount_mismatch";
+    }
 
     await db.order.update({
       where: { id: orderId },
@@ -141,8 +154,16 @@ export async function syncMpPayment(paymentId: string): Promise<string | null> {
   try {
     const payment = await paymentClient.get({ id: paymentId });
     const orderId = payment.external_reference;
-    const status = payment.status; // approved | pending | in_process | rejected | ...
+    let status = payment.status; // approved | pending | in_process | rejected | ...
     if (!orderId || !status) return null;
+
+    // Un pago "aprobado" solo cuenta si cubre el total del pedido.
+    const order = await db.order.findUnique({ where: { id: orderId }, select: { total: true } });
+    if (!order) return null;
+    if (status === "approved" && !amountCoversTotal(payment.transaction_amount, order.total)) {
+      console.warn(`[mercadopago] pago ${payment.id} no cubre el total del pedido ${orderId}`);
+      status = "amount_mismatch";
+    }
 
     await db.order.update({
       where: { id: orderId },

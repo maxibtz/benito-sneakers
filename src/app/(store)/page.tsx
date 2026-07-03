@@ -3,6 +3,7 @@ import Image from "next/image";
 import { getActiveProductsForStore, getSiteSettings, getHomeContent } from "@/lib/dal";
 import { CatalogGrid, type CatalogItem } from "@/components/CatalogGrid";
 import { Marquee } from "@/components/Marquee";
+import { ScrollReveals } from "@/components/ScrollReveals";
 import { waLink } from "@/lib/whatsapp";
 
 export default async function StoreHomePage() {
@@ -51,6 +52,7 @@ export default async function StoreHomePage() {
 
   return (
     <div className="flex flex-col">
+      <ScrollReveals />
       <Marquee
         items={[
           "Envío a todo el país",
@@ -85,7 +87,7 @@ export default async function StoreHomePage() {
             <div className="mt-9 flex flex-wrap items-center gap-4">
               <Link
                 href={heroCtaLink}
-                className="rounded-full bg-white px-7 py-3.5 text-sm font-medium text-[var(--color-store-bg)] transition-all duration-200 hover:bg-white/85 active:scale-[0.98]"
+                className="btn-press btn-shine rounded-full bg-white px-7 py-3.5 text-sm font-semibold text-[var(--color-store-bg)] hover:bg-white/90"
               >
                 {heroCtaText}
               </Link>
@@ -341,7 +343,7 @@ export default async function StoreHomePage() {
             </p>
             <Link
               href={home.finalCtaLink || "#catalogo"}
-              className="mt-7 inline-block rounded-full bg-white px-8 py-3.5 text-sm font-medium text-[var(--color-store-bg)] transition hover:bg-white/85 active:scale-[0.98]"
+              className="btn-press btn-shine mt-7 inline-block rounded-full bg-white px-8 py-3.5 text-sm font-semibold text-[var(--color-store-bg)] hover:bg-white/90"
             >
               {home.finalCtaButton}
             </Link>

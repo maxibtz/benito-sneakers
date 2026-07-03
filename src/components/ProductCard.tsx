@@ -30,7 +30,7 @@ export function ProductCard({
   const discountPct = onSale ? Math.round((1 - salePrice! / price) * 100) : 0;
 
   return (
-    <Link href={`/producto/${id}`} className="group flex flex-col">
+    <Link href={`/producto/${id}`} className="group card-lift flex flex-col">
       <div className="relative aspect-square w-full">
         {image ? (
           <Image
@@ -51,8 +51,8 @@ export function ProductCard({
           </span>
         )}
         {lowStock && (
-          <span className="absolute left-1 top-1 rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
-            Últimas {totalStock}
+          <span className="badge-pulse absolute left-1 top-1 rounded-full border border-[var(--color-lilac-vivid)]/40 bg-[var(--color-lilac-vivid)]/20 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
+            🔥 Últimas {totalStock}
           </span>
         )}
         {outOfStock && (

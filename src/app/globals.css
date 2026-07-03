@@ -145,10 +145,134 @@ textarea:focus-visible {
   animation: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* ---------- Micro-interacciones y reveals (conversión) ---------- */
+
+/* Reveal al hacer scroll: los bloques del home aparecen suavemente. */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Card de producto: se eleva al pasar el mouse (anticipación de click). */
+.card-lift {
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.25s ease-out;
+}
+.card-lift:hover {
+  transform: translateY(-6px);
+  filter: drop-shadow(0 18px 24px rgba(139, 109, 255, 0.18));
+}
+
+/* Botones CTA: leve lift al hover + compresión al click (squash & stretch). */
+.btn-press {
+  transition:
+    transform 0.1s ease-out,
+    box-shadow 0.15s ease-out,
+    background-color 0.15s ease-out,
+    opacity 0.15s ease-out;
+}
+.btn-press:hover {
+  transform: translateY(-1px);
+}
+.btn-press:active {
+  transform: translateY(0) scale(0.97);
+}
+
+/* Brillo que cruza el CTA principal cada tanto (atrae la mirada sin molestar). */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 42%,
+    rgba(255, 255, 255, 0.25) 50%,
+    transparent 58%
+  );
+  transform: translateX(-120%);
+  animation: shine-sweep 4.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes shine-sweep {
+  0%,
+  72% {
+    transform: translateX(-120%);
+  }
+  88%,
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+/* Urgencia: el badge "Últimas X" late suave para llamar la atención. */
+.badge-pulse {
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+@keyframes badge-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(139, 109, 255, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(139, 109, 255, 0);
+  }
+}
+
+/* Feedback al agregar al carrito. */
+.animate-pop {
+  animation: pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes cart-bump {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.25) rotate(-4deg);
+  }
+  70% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.animate-cart-bump {
+  animation: cart-bump 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee,
-  .animate-fade-up {
+  .animate-fade-up,
+  .animate-pop,
+  .animate-cart-bump,
+  .badge-pulse {
     animation: none;
+  }
+  .btn-shine::after {
+    display: none;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .card-lift,
+  .btn-press {
+    transition: none;
   }
   html {
     scroll-behavior: auto;

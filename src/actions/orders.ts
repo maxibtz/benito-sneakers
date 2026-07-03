@@ -10,6 +10,7 @@ import { evaluateCoupon } from "@/lib/coupon";
 import { getShippingConfig } from "@/lib/dal";
 import { computeShipping, canPickup, type ShippingMethod } from "@/lib/shipping";
 import { sendTrackingEmail } from "@/lib/emails";
+import { rateLimit, waitText } from "@/lib/rate-limit";
 import type { OrderStatus, PaymentMethod } from "@/generated/prisma/enums";
 
 export type TrackingState = { ok?: boolean; error?: string; sent?: boolean };
@@ -149,7 +150,40 @@ export async function createOrderAction(input: CreateOrderInput) {
   }
   const customerId = session.customerId;
 
-  const subtotal = input.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+  // Anti-abuso: máx 5 pedidos cada 10 minutos por cuenta.
+  const rl = rateLimit(`order:${customerId}`, 5, 10 * 60 * 1000);
+  if (!rl.ok) {
+    throw new Error(`Demasiados pedidos seguidos. Probá de nuevo en ${waitText(rl.retryAfterSec)}.`);
+  }
+
+  if (!Array.isArray(input.items) || input.items.length === 0 || input.items.length > 50) {
+    throw new Error("El carrito es inválido.");
+  }
+
+  // SEGURIDAD: los precios se leen SIEMPRE de la base de datos.
+  // Nunca confiamos en el unitPrice que manda el navegador.
+  const variantIds = input.items.map((i) => i.variantId);
+  const variants = await db.variant.findMany({
+    where: { id: { in: variantIds } },
+    include: { product: true },
+  });
+  const variantById = new Map(variants.map((v) => [v.id, v]));
+
+  const items = input.items.map((raw) => {
+    const variant = variantById.get(raw.variantId);
+    if (!variant || variant.productId !== raw.productId || !variant.product.active) {
+      throw new Error("Hay un producto inválido en el carrito. Actualizá la página.");
+    }
+    const quantity = Math.floor(Number(raw.quantity));
+    if (!Number.isFinite(quantity) || quantity < 1 || quantity > 99) {
+      throw new Error("Cantidad inválida en el carrito.");
+    }
+    const p = variant.product;
+    const unitPrice = p.salePrice && p.salePrice < p.price ? p.salePrice : p.price;
+    return { productId: p.id, variantId: variant.id, quantity, unitPrice };
+  });
+
+  const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
 
   // Re-validate coupon on the server — never trust the client for the discount.
   const coupon = input.couponCode ? await evaluateCoupon(input.couponCode) : null;
@@ -171,7 +205,7 @@ export async function createOrderAction(input: CreateOrderInput) {
   const total = afterDiscount + shippingCost;
 
   const order = await db.$transaction(async (tx) => {
-    for (const item of input.items) {
+    for (const item of items) {
       const variant = await tx.variant.findUnique({ where: { id: item.variantId } });
       if (!variant || variant.stock < item.quantity) {
         throw new Error(`Sin stock suficiente para el talle seleccionado.`);
@@ -198,7 +232,7 @@ export async function createOrderAction(input: CreateOrderInput) {
         couponCode: coupon ? coupon.code : null,
         paymentMethod: input.paymentMethod,
         items: {
-          create: input.items.map((item) => ({
+          create: items.map((item) => ({
             productId: item.productId,
             variantId: item.variantId,
             quantity: item.quantity,
@@ -209,7 +243,7 @@ export async function createOrderAction(input: CreateOrderInput) {
       include: { items: { include: { product: true } } },
     });
 
-    for (const item of input.items) {
+    for (const item of items) {
       await tx.variant.update({
         where: { id: item.variantId },
         data: { stock: { decrement: item.quantity } },

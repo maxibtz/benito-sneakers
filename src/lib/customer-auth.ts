@@ -1,10 +1,8 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { authSecretBytes as secret } from "@/lib/secret";
 
 const CUSTOMER_COOKIE = "benito_customer";
-const secret = new TextEncoder().encode(
-  process.env.AUTH_SECRET ?? "dev-only-insecure-secret-change-me"
-);
 
 export type CustomerSession = { customerId: string; email: string; name: string };
 

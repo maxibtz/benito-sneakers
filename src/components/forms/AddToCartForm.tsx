@@ -111,7 +111,7 @@ export function AddToCartForm({ productId, brand, model, price, image, variants 
           handleAdd();
           router.push("/carrito");
         }}
-        className="rounded-full bg-white px-5 py-4 text-sm font-medium text-[var(--color-store-bg)] transition-all duration-200 hover:bg-white/85 active:scale-[0.98]"
+        className="btn-press btn-shine rounded-full bg-white px-5 py-4 text-sm font-semibold text-[var(--color-store-bg)] hover:bg-white/90"
       >
         Comprar ahora
       </button>
@@ -126,6 +126,28 @@ export function AddToCartForm({ productId, brand, model, price, image, variants 
       >
         {added ? "¡Agregado! ✓" : "Agregar al carrito"}
       </button>
+
+      {/* Señales de confianza — reducen la duda justo antes de comprar */}
+      <div className="mt-1 grid grid-cols-3 gap-2 text-center">
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] px-2 py-2.5">
+          <p className="text-base" aria-hidden>🔒</p>
+          <p className="mt-0.5 text-[11px] leading-tight text-[var(--color-store-muted)]">
+            Pago protegido con Mercado Pago
+          </p>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] px-2 py-2.5">
+          <p className="text-base" aria-hidden>🚚</p>
+          <p className="mt-0.5 text-[11px] leading-tight text-[var(--color-store-muted)]">
+            Envíos a todo el país
+          </p>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] px-2 py-2.5">
+          <p className="text-base" aria-hidden>📍</p>
+          <p className="mt-0.5 text-[11px] leading-tight text-[var(--color-store-muted)]">
+            Seguí tu pedido en vivo
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

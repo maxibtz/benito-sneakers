@@ -1,11 +1,9 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { authSecretBytes as secret } from "@/lib/secret";
 
 const SESSION_COOKIE = "benito_session";
-const secret = new TextEncoder().encode(
-  process.env.AUTH_SECRET ?? "dev-only-insecure-secret-change-me"
-);
 
 export async function createSession(adminId: string, email: string) {
   const token = await new SignJWT({ adminId, email })

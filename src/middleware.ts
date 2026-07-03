@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
+import { authSecretBytes as secret } from "@/lib/secret";
 
 const SESSION_COOKIE = "benito_session";
-const secret = new TextEncoder().encode(
-  process.env.AUTH_SECRET ?? "dev-only-insecure-secret-change-me"
-);
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

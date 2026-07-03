@@ -81,10 +81,13 @@ export default function CartPage() {
 
       <Link
         href="/checkout"
-        className="rounded-full bg-white px-5 py-4 text-center text-sm font-medium text-[var(--color-store-bg)] transition-all duration-200 hover:bg-white/85 active:scale-[0.98]"
+        className="btn-press btn-shine rounded-full bg-white px-5 py-4 text-center text-sm font-semibold text-[var(--color-store-bg)] hover:bg-white/90"
       >
-        Finalizar compra
+        Finalizar compra →
       </Link>
+      <p className="text-center text-xs text-[var(--color-store-muted)]">
+        🔒 Pago protegido con Mercado Pago · 🚚 Envíos a todo el país
+      </p>
     </div>
   );
 }
