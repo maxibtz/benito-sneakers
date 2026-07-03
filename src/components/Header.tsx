@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { CartButton } from "@/components/ui/CartButton";
 import { getCustomerSession } from "@/lib/customer-auth";
 import { logoutCustomerAction } from "@/actions/customer-auth";
@@ -11,10 +12,17 @@ export async function Header() {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
         <Link
           href="/"
-          className="font-display text-lg font-medium lowercase tracking-tight text-white transition-opacity hover:opacity-70"
-          aria-label="benito sneakers — inicio"
+          className="transition-opacity hover:opacity-80"
+          aria-label="Benito Sneakers — inicio"
         >
-          benito <span className="text-[var(--color-store-muted)]">sneakers</span>
+          <Image
+            src="/brand/logo-mark.png"
+            alt="Benito Sneakers"
+            width={441}
+            height={200}
+            priority
+            className="h-10 w-auto sm:h-11"
+          />
         </Link>
 
         <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 md:flex">

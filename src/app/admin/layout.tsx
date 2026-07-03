@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { logoutAction } from "@/actions/auth";
 import { ThemeScript } from "@/components/theme/ThemeScript";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
@@ -21,11 +22,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <ThemeScript storageKey={ADMIN_THEME_KEY} />
       <div className="flex min-h-screen bg-[#f4f3fb] dark:bg-[#0b0d1a]">
         <aside className="flex w-64 flex-col bg-[var(--color-navy)] text-white dark:bg-[#0a0f33]">
-          <div className="flex items-start justify-between gap-2 px-6 py-6">
-            <div>
-              <h1 className="text-xl font-bold text-[var(--color-lilac)]">Benito Sneakers</h1>
-              <p className="text-xs text-[var(--color-skyblue)]">Panel de administración</p>
-            </div>
+          <div className="px-6 py-6">
+            <Image
+              src="/brand/logo-mark.png"
+              alt="Benito Sneakers"
+              width={441}
+              height={200}
+              priority
+              className="h-14 w-auto"
+            />
+            <p className="mt-2 text-xs text-[var(--color-skyblue)]">Panel de administración</p>
           </div>
           <div className="px-3 pb-3">
             <a

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { getSiteSettings } from "@/lib/dal";
 
 export async function Footer() {
@@ -17,9 +18,13 @@ export async function Footer() {
       <div className="mx-auto max-w-6xl px-5 py-14 sm:px-8">
         <div className="grid gap-10 sm:grid-cols-3">
           <div>
-            <p className="font-display text-lg font-medium lowercase tracking-tight text-white">
-              benito sneakers
-            </p>
+            <Image
+              src="/brand/logo-mark.png"
+              alt="Benito Sneakers — minorista y mayorista"
+              width={441}
+              height={200}
+              className="h-14 w-auto"
+            />
             <p className="mt-3 max-w-xs text-sm leading-relaxed text-[var(--color-store-muted)]">
               Zapatillas alternativas. Modelos únicos, pares contados, envíos a todo el país.
             </p>
