@@ -51,12 +51,15 @@ function resolveVariants(formData: FormData): { size: string; stock: number }[] 
     try {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        return parsed
+        const rows = parsed
           .map((v) => ({
             size: String(v?.size ?? "").trim(),
             stock: Math.max(0, Math.floor(Number(v?.stock)) || 0),
           }))
           .filter((v) => v.size.length > 0);
+        // Sin talles repetidos (romperían la restricción única): gana la última fila.
+        const bySize = new Map(rows.map((r) => [r.size, r]));
+        return [...bySize.values()];
       }
     } catch {
       // caemos al formato viejo
@@ -173,23 +176,58 @@ export async function updateProductAction(
   const keptVideos = parseExistingImages(formData.get("existingVideos"), current.videos);
   const allVideos = [...keptVideos, ...newVideoPaths];
 
-  await db.$transaction([
-    db.variant.deleteMany({ where: { productId: id } }),
-    db.product.update({
-      where: { id },
-      data: {
-        ...rest,
-        category,
-        sectionId,
-        salePrice,
-        cost,
-        costBreakdown: breakdown,
-        images: allImages.join(","),
-        videos: allVideos.join(","),
-        variants: { create: variants },
-      },
-    }),
-  ]);
+  try {
+    await db.$transaction(async (tx) => {
+      // Sincronizar talles SIN borrar y recrear: los talles vendidos están
+      // enlazados a pedidos históricos y la base impide eliminarlos.
+      const existing = await tx.variant.findMany({
+        where: { productId: id },
+        include: { _count: { select: { orderItems: true } } },
+      });
+      const existingBySize = new Map(existing.map((v) => [v.size, v]));
+      const submittedSizes = new Set(variants.map((v) => v.size));
+
+      for (const v of variants) {
+        const ex = existingBySize.get(v.size);
+        if (ex) {
+          if (ex.stock !== v.stock) {
+            await tx.variant.update({ where: { id: ex.id }, data: { stock: v.stock } });
+          }
+        } else {
+          await tx.variant.create({ data: { productId: id, size: v.size, stock: v.stock } });
+        }
+      }
+      for (const ex of existing) {
+        if (submittedSizes.has(ex.size)) continue;
+        if (ex._count.orderItems > 0) {
+          // Tiene ventas: no se puede borrar; queda sin stock (no se muestra).
+          await tx.variant.update({ where: { id: ex.id }, data: { stock: 0 } });
+        } else {
+          await tx.variant.delete({ where: { id: ex.id } });
+        }
+      }
+
+      await tx.product.update({
+        where: { id },
+        data: {
+          ...rest,
+          category,
+          sectionId,
+          salePrice,
+          cost,
+          costBreakdown: breakdown,
+          images: allImages.join(","),
+          videos: allVideos.join(","),
+        },
+      });
+    });
+  } catch (err) {
+    console.error("[products] error al actualizar:", err);
+    return {
+      error: "No pudimos guardar los cambios por un error interno. Probá de nuevo en un momento.",
+      values,
+    };
+  }
 
   revalidatePath("/", "layout");
   redirect("/admin/productos");
@@ -254,6 +292,16 @@ function parseCostBreakdown(raw: FormDataEntryValue | null): {
 
 export async function deleteProductAction(id: string) {
   await requireAdmin();
+
+  // Un producto con ventas no se puede borrar (los pedidos históricos lo
+  // referencian): se oculta de la tienda y se avisa en el listado.
+  const sales = await db.orderItem.count({ where: { productId: id } });
+  if (sales > 0) {
+    await db.product.update({ where: { id }, data: { active: false } });
+    revalidatePath("/", "layout");
+    redirect("/admin/productos?aviso=con-ventas");
+  }
+
   await db.product.delete({ where: { id } });
   revalidatePath("/", "layout");
 }
