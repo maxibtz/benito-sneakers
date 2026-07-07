@@ -29,15 +29,78 @@ export async function getDashboardStats() {
     })
   );
 
+  // Ventas manuales (cargadas a mano): se suman a los ingresos.
+  const manual = await db.manualSale.aggregate({ _sum: { total: true }, _count: true });
+  const manualRevenue = manual._sum.total ?? 0;
+  const manualCount = manual._count ?? 0;
+
   return {
     totalProducts,
     totalOrders,
     pendingOrders,
-    totalRevenue: totalRevenue._sum.total ?? 0,
+    totalRevenue: (totalRevenue._sum.total ?? 0) + manualRevenue,
+    onlineRevenue: totalRevenue._sum.total ?? 0,
+    manualRevenue,
+    manualCount,
     customers,
     activeCustomers,
     bestSellers: bestSellers.filter((b) => b.product !== null),
   };
+}
+
+export type ManualSaleItem = { description: string; quantity: number; unitPrice: number };
+
+export type ManualSaleRow = {
+  id: string;
+  soldAt: Date;
+  customerName: string;
+  channel: string;
+  paymentMethod: string;
+  items: ManualSaleItem[];
+  total: number;
+  cost: number;
+  profit: number;
+  note: string;
+};
+
+function parseSaleItems(raw: string): ManualSaleItem[] {
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((it) => ({
+      description: String(it?.description ?? ""),
+      quantity: Number(it?.quantity) || 0,
+      unitPrice: Number(it?.unitPrice) || 0,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function getManualSales(): Promise<ManualSaleRow[]> {
+  const rows = await db.manualSale.findMany({ orderBy: { soldAt: "desc" } });
+  return rows.map((r) => ({
+    id: r.id,
+    soldAt: r.soldAt,
+    customerName: r.customerName,
+    channel: r.channel,
+    paymentMethod: r.paymentMethod,
+    items: parseSaleItems(r.items),
+    total: r.total,
+    cost: r.cost,
+    profit: r.total - r.cost,
+    note: r.note,
+  }));
+}
+
+export async function getManualSalesStats() {
+  const agg = await db.manualSale.aggregate({
+    _sum: { total: true, cost: true },
+    _count: true,
+  });
+  const revenue = agg._sum.total ?? 0;
+  const cost = agg._sum.cost ?? 0;
+  return { count: agg._count ?? 0, revenue, cost, profit: revenue - cost };
 }
 
 export async function getProfitStats() {
@@ -84,6 +147,11 @@ export async function getProfitStats() {
       }
     }
   }
+  // Ventas manuales: se suman a la facturación y al costo de lo vendido.
+  const manual = await db.manualSale.aggregate({ _sum: { total: true, cost: true } });
+  netRevenue += manual._sum.total ?? 0;
+  cogs += manual._sum.cost ?? 0;
+
   const profit = netRevenue - cogs;
   const marginPct = netRevenue > 0 ? Math.round((profit / netRevenue) * 100) : 0;
   const costBreakdown = Array.from(costByComponent.entries())

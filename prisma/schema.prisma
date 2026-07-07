@@ -254,3 +254,18 @@ model OrderItem {
   quantity  Int
   unitPrice Float
 }
+
+// Ventas cargadas a mano por el admin (en persona, WhatsApp, mayorista, etc.).
+// Se suman a los ingresos y la ganancia del dashboard.
+model ManualSale {
+  id            String   @id @default(cuid())
+  soldAt        DateTime @default(now()) // fecha de la venta (editable)
+  customerName  String   @default("")
+  channel       String   @default("") // En persona / WhatsApp / Instagram / Mayorista / Otro
+  paymentMethod String   @default("") // Efectivo / Transferencia / Otro
+  items         String   @default("[]") // [{description, quantity, unitPrice}]
+  total         Float    @default(0) // monto total cobrado
+  cost          Float    @default(0) // costo total de la mercadería (para la ganancia)
+  note          String   @default("")
+  createdAt     DateTime @default(now())
+}

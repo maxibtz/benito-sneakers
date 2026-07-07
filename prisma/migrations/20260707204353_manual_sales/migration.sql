@@ -1,0 +1,13 @@
+-- CreateTable
+CREATE TABLE "ManualSale" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "soldAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "customerName" TEXT NOT NULL DEFAULT '',
+    "channel" TEXT NOT NULL DEFAULT '',
+    "paymentMethod" TEXT NOT NULL DEFAULT '',
+    "items" TEXT NOT NULL DEFAULT '[]',
+    "total" REAL NOT NULL DEFAULT 0,
+    "cost" REAL NOT NULL DEFAULT 0,
+    "note" TEXT NOT NULL DEFAULT '',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

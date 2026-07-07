@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: "/admin/productos", label: "Productos" },
   { href: "/admin/secciones", label: "Secciones" },
   { href: "/admin/pedidos", label: "Pedidos" },
+  { href: "/admin/ventas", label: "Ventas manuales" },
   { href: "/admin/clientes", label: "Clientes" },
   { href: "/admin/cupones", label: "Cupones" },
   { href: "/admin/contenido", label: "Contenido home" },

@@ -19,11 +19,11 @@ export default async function AdminDashboardPage() {
 
   const cards = [
     { label: "Productos activos", value: stats.totalProducts },
-    { label: "Pedidos totales", value: stats.totalOrders },
-    { label: "Pedidos pendientes", value: stats.pendingOrders },
-    { label: "Ingresos (no cancelados)", value: formatARS(stats.totalRevenue) },
+    { label: "Pedidos online", value: stats.totalOrders },
+    { label: "Ventas manuales", value: stats.manualCount },
+    { label: "Ingresos totales", value: formatARS(stats.totalRevenue) },
+    { label: "Ingresos manuales", value: formatARS(stats.manualRevenue) },
     { label: "Clientes registrados", value: stats.customers },
-    { label: "Clientes activos (30d)", value: stats.activeCustomers },
   ];
 
   return (
