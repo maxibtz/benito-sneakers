@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getOrder } from "@/lib/dal";
-import { deleteOrderAction } from "@/actions/orders";
+import { deleteOrderAction, confirmPaymentReceivedAction } from "@/actions/orders";
 import { refreshOrderPaymentAction, syncMpPaymentByOrder } from "@/actions/mercadopago";
 import { OrderStatusButton } from "@/components/forms/OrderStatusButton";
 import { TrackingForm } from "@/components/forms/TrackingForm";
@@ -113,6 +113,26 @@ export default async function OrderDetailPage({
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
           <span>Método de pago: {order.paymentMethod.replaceAll("_", " ")}</span>
+          {order.paymentMethod !== "MERCADOPAGO" &&
+            (order.paymentStatus === "approved" ? (
+              <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-500/20 dark:text-green-400">
+                ✓ Pago confirmado
+              </span>
+            ) : (
+              <>
+                <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-500/20 dark:text-amber-400">
+                  Esperando pago
+                </span>
+                <form action={confirmPaymentReceivedAction.bind(null, order.id)}>
+                  <button
+                    type="submit"
+                    className="rounded-full bg-green-600 px-3 py-0.5 text-xs font-semibold text-white hover:bg-green-700"
+                  >
+                    ✓ Confirmar pago recibido (avisa por email)
+                  </button>
+                </form>
+              </>
+            ))}
           {order.paymentMethod === "MERCADOPAGO" && (
             <span
               className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${

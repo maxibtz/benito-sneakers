@@ -130,9 +130,9 @@ export function AddToCartForm({ productId, brand, model, price, image, variants 
       {/* Señales de confianza — reducen la duda justo antes de comprar */}
       <div className="mt-1 grid grid-cols-3 gap-2 text-center">
         <div className="rounded-xl border border-white/10 bg-white/[0.03] px-2 py-2.5">
-          <p className="text-base" aria-hidden>🔒</p>
+          <p className="text-base" aria-hidden>💸</p>
           <p className="mt-0.5 text-[11px] leading-tight text-[var(--color-store-muted)]">
-            Pago protegido con Mercado Pago
+            Transferencia sin recargo
           </p>
         </div>
         <div className="rounded-xl border border-white/10 bg-white/[0.03] px-2 py-2.5">

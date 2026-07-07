@@ -86,7 +86,7 @@ export default function CartPage() {
         Finalizar compra →
       </Link>
       <p className="text-center text-xs text-[var(--color-store-muted)]">
-        🔒 Pago protegido con Mercado Pago · 🚚 Envíos a todo el país
+        💸 Transferencia sin recargo · 🚚 Envíos a todo el país · 💬 Atención por WhatsApp
       </p>
     </div>
   );

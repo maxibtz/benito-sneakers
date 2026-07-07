@@ -56,7 +56,7 @@ export default async function StoreHomePage() {
       <Marquee
         items={[
           "Envío a todo el país",
-          "3 cuotas sin interés",
+          "Transferencia sin recargo",
           "Stock real verificado",
           "Modelos alternativos",
         ]}

@@ -9,7 +9,7 @@ import { notifyNewOrder } from "@/lib/notify";
 import { evaluateCoupon } from "@/lib/coupon";
 import { getShippingConfig } from "@/lib/dal";
 import { computeShipping, canPickup, type ShippingMethod } from "@/lib/shipping";
-import { sendTrackingEmail } from "@/lib/emails";
+import { sendTrackingEmail, sendPaymentReceivedEmail } from "@/lib/emails";
 import { rateLimit, waitText } from "@/lib/rate-limit";
 import type { OrderStatus, PaymentMethod } from "@/generated/prisma/enums";
 
@@ -100,6 +100,35 @@ export async function updateOrderStatusAction(
   revalidatePath("/admin/pedidos");
   revalidatePath(`/admin/pedidos/${id}`);
   return {};
+}
+
+/**
+ * Confirmación manual del pago (transferencia/efectivo): marca el pedido como
+ * pagado y le avisa al cliente por email (solo si no estaba ya aprobado).
+ */
+export async function confirmPaymentReceivedAction(orderId: string) {
+  await requireAdmin();
+  const order = await db.order.findUnique({
+    where: { id: orderId },
+    select: { paymentStatus: true, email: true, customerName: true, total: true },
+  });
+  if (!order) return;
+
+  await db.order.update({
+    where: { id: orderId },
+    data: { paymentStatus: "approved" },
+  });
+
+  if (order.paymentStatus !== "approved" && order.email) {
+    try {
+      await sendPaymentReceivedEmail(order.email, order.customerName, orderId, order.total);
+    } catch (err) {
+      console.error("[orders] no se pudo enviar el mail de pago recibido:", err);
+    }
+  }
+
+  revalidatePath(`/admin/pedidos/${orderId}`);
+  revalidatePath("/admin/pedidos");
 }
 
 export async function deleteOrderAction(id: string) {

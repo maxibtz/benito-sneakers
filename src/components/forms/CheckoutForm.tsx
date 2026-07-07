@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/contexts/CartContext";
 import { createOrderAction } from "@/actions/orders";
-import { createMpPreferenceAction } from "@/actions/mercadopago";
 import { validateCouponAction } from "@/actions/coupon";
 import {
   AR_PROVINCES,
@@ -19,11 +18,8 @@ function formatARS(value: number) {
 }
 
 const PAYMENT_OPTIONS = [
-  { value: "MERCADOPAGO", label: "Mercado Pago (online)" },
-  { value: "TRANSFERENCIA", label: "Transferencia bancaria" },
-  { value: "EFECTIVO", label: "Efectivo" },
-  { value: "LINK_TARJETA", label: "Link de pago con tarjeta" },
-  { value: "PAGO_FACIL_RAPIPAGO", label: "Pago Fácil / Rapipago" },
+  { value: "TRANSFERENCIA", label: "Transferencia bancaria (sin recargo) ⭐" },
+  { value: "EFECTIVO", label: "Efectivo (solo retiro en persona)" },
 ] as const;
 
 type CheckoutFormProps = {
@@ -46,7 +42,7 @@ export function CheckoutForm({
   const { items, totalPrice, clearCart } = useCart();
   const router = useRouter();
   const [paymentMethod, setPaymentMethod] =
-    useState<(typeof PAYMENT_OPTIONS)[number]["value"]>("MERCADOPAGO");
+    useState<(typeof PAYMENT_OPTIONS)[number]["value"]>("TRANSFERENCIA");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -122,23 +118,6 @@ export function CheckoutForm({
           unitPrice: i.price,
         })),
       });
-
-      // Si paga con Mercado Pago, generamos el link y lo mandamos a pagar.
-      if (paymentMethod === "MERCADOPAGO") {
-        const pref = await createMpPreferenceAction(order.id);
-        if (pref.ok) {
-          clearCart();
-          window.location.href = pref.initPoint;
-          return;
-        }
-        // Si MP no está configurado, no perdemos el pedido: lo confirmamos igual.
-        setError(
-          `${pref.error} Tu pedido quedó registrado (#${order.id.slice(-6)}); te contactamos para coordinar el pago.`
-        );
-        clearCart();
-        router.push(`/pedido-confirmado/${order.id}`);
-        return;
-      }
 
       clearCart();
       router.push(`/pedido-confirmado/${order.id}`);
@@ -272,16 +251,20 @@ export function CheckoutForm({
             </label>
           ))}
         </div>
-        {paymentMethod === "TRANSFERENCIA" && transferAlias && (
+        {paymentMethod === "TRANSFERENCIA" && (
           <p className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-[var(--color-store-muted)]">
-            Alias para transferir: <strong className="text-white">{transferAlias}</strong>. Te
-            vamos a contactar para confirmar el pago.
+            Al confirmar te mostramos {transferAlias ? (
+              <>el alias <strong className="text-white">{transferAlias}</strong></>
+            ) : (
+              "el alias"
+            )}{" "}
+            y el total exacto, y nos mandás el comprobante por WhatsApp. Tu pedido queda
+            reservado.
           </p>
         )}
-        {paymentMethod === "MERCADOPAGO" && (
+        {paymentMethod === "EFECTIVO" && (
           <p className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-[var(--color-store-muted)]">
-            Al confirmar te llevamos a Mercado Pago para pagar de forma segura (tarjeta, dinero en
-            cuenta o cuotas). Volvés solo a la tienda al terminar.
+            Pagás en efectivo al retirar tu pedido en persona (Formosa capital).
           </p>
         )}
       </div>
@@ -355,11 +338,7 @@ export function CheckoutForm({
         disabled={submitting}
         className="rounded-full bg-white px-5 py-4 text-sm font-medium text-[var(--color-store-bg)] transition-all duration-200 hover:bg-white/85 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {submitting
-          ? "Procesando..."
-          : paymentMethod === "MERCADOPAGO"
-            ? "Pagar con Mercado Pago"
-            : "Confirmar pedido"}
+        {submitting ? "Procesando..." : "Confirmar pedido"}
       </button>
     </form>
   );

@@ -60,6 +60,15 @@ export default async function OrderConfirmedPage({
       `¿Me pasás el código de seguimiento del envío? 📦`
   );
 
+  // Transferencia: alias + total + comprobante por WhatsApp.
+  const isTransferPending =
+    order.paymentMethod === "TRANSFERENCIA" && order.paymentStatus !== "approved";
+  const transferWaLink = waLink(
+    settings.whatsapp,
+    `¡Hola! Soy ${order.customerName} 👋 Acabo de transferir ${formatARS(order.total)} ` +
+      `por mi pedido #${order.id.slice(-8)}. Te adjunto el comprobante 🧾`
+  );
+
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6 px-5 py-12 sm:px-8">
       <div className="text-center">
@@ -76,6 +85,53 @@ export default async function OrderConfirmedPage({
       {banner && (
         <div className={`rounded-2xl border px-5 py-4 text-sm ${banner.className}`}>
           {banner.text}
+        </div>
+      )}
+
+      {/* Transferencia: el paso a paso para cerrar el pago */}
+      {isTransferPending && (
+        <div className="rounded-2xl border border-[var(--color-lilac-vivid)]/40 bg-[var(--color-lilac-vivid)]/10 p-6">
+          <h2 className="mb-4 text-center font-medium text-white">
+            Último paso: transferí y mandanos el comprobante 👇
+          </h2>
+          <ol className="flex flex-col gap-3 text-sm text-white/90">
+            <li className="flex items-start gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-lilac-vivid)] text-xs font-bold text-white">1</span>
+              <span>
+                Transferí <strong className="text-white">{formatARS(order.total)}</strong> al
+                alias:
+              </span>
+            </li>
+          </ol>
+          {settings.transferAlias && (
+            <p className="my-3 rounded-xl border border-white/15 bg-black/20 py-3 text-center font-mono text-xl font-bold tracking-wide text-white">
+              {settings.transferAlias}
+            </p>
+          )}
+          <ol className="flex flex-col gap-3 text-sm text-white/90">
+            <li className="flex items-start gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-lilac-vivid)] text-xs font-bold text-white">2</span>
+              <span>Sacale captura al comprobante.</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-lilac-vivid)] text-xs font-bold text-white">3</span>
+              <span>Mandánoslo por WhatsApp tocando el botón (el mensaje ya va escrito):</span>
+            </li>
+          </ol>
+          {transferWaLink && (
+            <a
+              href={transferWaLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-press mt-4 flex items-center justify-center gap-2 rounded-full bg-[#25D366] px-6 py-3.5 text-sm font-semibold text-white transition hover:brightness-95"
+            >
+              ✅ Ya transferí — enviar comprobante
+            </a>
+          )}
+          <p className="mt-3 text-center text-xs text-[var(--color-store-muted)]">
+            Tu pedido queda reservado. Apenas confirmemos el pago te llega un email y preparamos
+            el envío.
+          </p>
         </div>
       )}
 
