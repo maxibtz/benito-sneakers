@@ -4,6 +4,26 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { getMpPreferenceClient, getMpPaymentClient, getAppUrl } from "@/lib/mercadopago";
+import { sendPaymentReceivedEmail } from "@/lib/emails";
+
+/**
+ * Aviso al cliente cuando su pago queda aprobado (solo la primera vez,
+ * para no mandar correos duplicados). Best-effort: si el mail falla,
+ * el estado del pedido se actualiza igual.
+ */
+async function notifyPaymentApproved(
+  order: { email: string | null; customerName: string; total: number; paymentStatus: string },
+  orderId: string,
+  newStatus: string
+) {
+  if (newStatus !== "approved" || order.paymentStatus === "approved") return;
+  if (!order.email) return;
+  try {
+    await sendPaymentReceivedEmail(order.email, order.customerName, orderId, order.total);
+  } catch (err) {
+    console.error("[mercadopago] no se pudo enviar el mail de pago recibido:", err);
+  }
+}
 
 /** El monto pagado cubre el total (con tolerancia de $1 por redondeos). */
 function amountCoversTotal(paid: number | undefined, total: number): boolean {
@@ -117,7 +137,10 @@ export async function syncMpPaymentByOrder(orderId: string): Promise<string | nu
     if (!status) return null;
 
     // Un pago "aprobado" solo cuenta si cubre el total del pedido.
-    const order = await db.order.findUnique({ where: { id: orderId }, select: { total: true } });
+    const order = await db.order.findUnique({
+      where: { id: orderId },
+      select: { total: true, paymentStatus: true, email: true, customerName: true },
+    });
     if (order && status === "approved" && !amountCoversTotal(chosen.transaction_amount, order.total)) {
       console.warn(`[mercadopago] pago ${chosen.id} no cubre el total del pedido ${orderId}`);
       status = "amount_mismatch";
@@ -127,6 +150,7 @@ export async function syncMpPaymentByOrder(orderId: string): Promise<string | nu
       where: { id: orderId },
       data: { paymentStatus: status, paymentRef: chosen.id ? String(chosen.id) : null },
     });
+    if (order) await notifyPaymentApproved(order, orderId, status);
     return status;
   } catch (err) {
     console.error("[mercadopago] payment search error:", err);
@@ -158,7 +182,10 @@ export async function syncMpPayment(paymentId: string): Promise<string | null> {
     if (!orderId || !status) return null;
 
     // Un pago "aprobado" solo cuenta si cubre el total del pedido.
-    const order = await db.order.findUnique({ where: { id: orderId }, select: { total: true } });
+    const order = await db.order.findUnique({
+      where: { id: orderId },
+      select: { total: true, paymentStatus: true, email: true, customerName: true },
+    });
     if (!order) return null;
     if (status === "approved" && !amountCoversTotal(payment.transaction_amount, order.total)) {
       console.warn(`[mercadopago] pago ${payment.id} no cubre el total del pedido ${orderId}`);
@@ -169,6 +196,7 @@ export async function syncMpPayment(paymentId: string): Promise<string | null> {
       where: { id: orderId },
       data: { paymentStatus: status, paymentRef: String(payment.id) },
     });
+    await notifyPaymentApproved(order, orderId, status);
     return status;
   } catch (err) {
     console.error("[mercadopago] payment sync error:", err);

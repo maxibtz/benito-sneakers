@@ -119,7 +119,7 @@ export function ProductForm({ action, sections, defaultValues, submitLabel }: Pr
           ⚠️ {state.error}
         </div>
       )}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Marca" name="brand" defaultValue={dvBrand} required />
         <Field label="Modelo" name="model" defaultValue={dvModel} required />
       </div>
@@ -132,7 +132,7 @@ export function ProductForm({ action, sections, defaultValues, submitLabel }: Pr
         required
       />
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1">
           <label htmlFor="sectionId" className="text-sm font-medium text-[var(--color-navy)] dark:text-gray-200">
             Sección
@@ -159,7 +159,7 @@ export function ProductForm({ action, sections, defaultValues, submitLabel }: Pr
         <Field label="SKU" name="sku" defaultValue={dvSku} required />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <Field
           label="Precio real (ARS)"
           name="price"

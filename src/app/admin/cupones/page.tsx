@@ -27,7 +27,7 @@ export default async function CuponesPage() {
       <NewCouponForm />
 
       {/* Lista de cupones */}
-      <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-[#151833] dark:shadow-none">
+      <div className="overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-[#151833] dark:shadow-none">
         <table className="w-full text-left text-sm">
           <thead className="bg-gray-50 text-gray-500 dark:bg-white/5 dark:text-gray-400">
             <tr>
@@ -103,7 +103,7 @@ export default async function CuponesPage() {
       </div>
 
       {/* Historial de uso */}
-      <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-[#151833] dark:shadow-none">
+      <div className="overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-[#151833] dark:shadow-none">
         <div className="border-b border-gray-100 px-4 py-3 dark:border-gray-700">
           <h2 className="font-semibold text-[var(--color-navy)] dark:text-white">
             Historial de uso

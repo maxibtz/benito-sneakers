@@ -34,7 +34,7 @@ export default async function OrdersPage() {
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-[#151833] dark:shadow-none">
+      <div className="overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-[#151833] dark:shadow-none">
         <table className="w-full text-left text-sm">
           <thead className="bg-gray-50 text-gray-500 dark:bg-white/5 dark:text-gray-400">
             <tr>

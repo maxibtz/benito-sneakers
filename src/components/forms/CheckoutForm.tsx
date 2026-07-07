@@ -155,20 +155,20 @@ export function CheckoutForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <Input label="Nombre completo" name="customerName" required defaultValue={defaultName} />
         <Input label="Teléfono / WhatsApp" name="phone" required defaultValue={defaultPhone} />
       </div>
 
       <Input label="Email" name="email" type="email" required defaultValue={defaultEmail} />
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <Input label="Calle" name="street" required />
         <Input label="Número" name="streetNumber" required />
         <Input label="Piso/Depto (opcional)" name="floorApt" />
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid gap-4 sm:grid-cols-3">
         <Input label="Ciudad" name="city" required />
         <div className="flex flex-col gap-1">
           <label htmlFor="province" className="text-sm text-[var(--color-store-muted)]">

@@ -23,6 +23,28 @@ export async function sendPasswordResetEmail(to: string, name: string, token: st
   return sendMail({ to, subject: "Recuperá tu contraseña — Benito Sneakers", html });
 }
 
+export async function sendPaymentReceivedEmail(
+  to: string,
+  name: string,
+  orderId: string,
+  total: number
+) {
+  const link = `${getAppUrl()}/pedido-confirmado/${orderId}`;
+  const totalFmt = new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+  }).format(total);
+  const html = emailLayout(
+    "¡Recibimos tu pago! ✅",
+    `<p>Hola ${name}, te confirmamos que <strong>recibimos el pago</strong> de tu pedido <strong>#${orderId.slice(-8)}</strong> por <strong>${totalFmt}</strong>.</p>
+     <p>Ya estamos preparando tu paquete. En cuanto lo despachemos, <strong>nos vamos a poner en contacto para pasarte el número de guía</strong> y que puedas seguirlo hasta tu puerta.</p>
+     <p>Mientras tanto, podés ver el estado de tu compra acá:</p>
+     <p>${button(link, "Ver mi pedido")}</p>
+     <p style="color:#8b8fa3;font-size:13px;">¿Dudas? Respondé este correo o escribinos por WhatsApp. Gracias por confiar en Benito Sneakers 💜</p>`
+  );
+  return sendMail({ to, subject: "Recibimos tu pago ✅ — Benito Sneakers", html });
+}
+
 export async function sendTrackingEmail(
   to: string,
   name: string,

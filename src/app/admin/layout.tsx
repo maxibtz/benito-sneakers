@@ -3,6 +3,7 @@ import Image from "next/image";
 import { logoutAction } from "@/actions/auth";
 import { ThemeScript } from "@/components/theme/ThemeScript";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { AdminMobileNav } from "@/components/admin/AdminMobileNav";
 import { ADMIN_THEME_KEY } from "@/lib/theme";
 
 const NAV_ITEMS = [
@@ -20,8 +21,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <>
       <ThemeScript storageKey={ADMIN_THEME_KEY} />
+
+      {/* Barra superior — solo celular */}
+      <header className="relative flex items-center justify-between bg-[var(--color-navy)] px-4 py-3 text-white dark:bg-[#0a0f33] lg:hidden">
+        <Link href="/admin">
+          <Image
+            src="/brand/logo-mark.png"
+            alt="Benito Sneakers"
+            width={441}
+            height={200}
+            priority
+            className="h-9 w-auto"
+          />
+        </Link>
+        <AdminMobileNav items={NAV_ITEMS} />
+      </header>
+
       <div className="flex min-h-screen bg-[#f4f3fb] dark:bg-[#0b0d1a]">
-        <aside className="flex w-64 flex-col bg-[var(--color-navy)] text-white dark:bg-[#0a0f33]">
+        {/* Sidebar — solo pantalla grande */}
+        <aside className="hidden w-64 flex-col bg-[var(--color-navy)] text-white dark:bg-[#0a0f33] lg:flex">
           <div className="px-6 py-6">
             <Image
               src="/brand/logo-mark.png"
@@ -67,7 +85,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </button>
           </form>
         </aside>
-        <main className="flex-1 p-8">{children}</main>
+        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
     </>
   );

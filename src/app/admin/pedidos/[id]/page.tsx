@@ -54,7 +54,7 @@ export default async function OrderDetailPage({
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-6 rounded-xl bg-white p-6 shadow-sm dark:bg-[#151833] dark:shadow-none">
+      <div className="grid gap-6 sm:grid-cols-2 rounded-xl bg-white p-6 shadow-sm dark:bg-[#151833] dark:shadow-none">
         <div>
           <h2 className="mb-2 font-semibold text-[var(--color-navy)] dark:text-white">
             Datos del cliente

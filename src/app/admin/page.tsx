@@ -146,7 +146,8 @@ export default async function AdminDashboardPage() {
           <h2 className="mb-4 text-lg font-semibold text-[var(--color-navy)] dark:text-white">
             Ventas por sección
           </h2>
-          <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[480px] text-left text-sm">
             <thead className="text-gray-500 dark:text-gray-400">
               <tr>
                 <th className="pb-2">Sección</th>
@@ -173,6 +174,7 @@ export default async function AdminDashboardPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
