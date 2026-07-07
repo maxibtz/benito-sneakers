@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   experimental: {
     serverActions: {
-      bodySizeLimit: "20mb",
+      bodySizeLimit: "220mb", // permite subir videos de muestra (hasta ~100MB c/u)
     },
   },
   async headers() {

@@ -58,6 +58,7 @@ export default async function EditProductPage({
           active: product.active,
           variants: product.variants.map((v) => ({ size: v.size, stock: v.stock })),
           images: product.images?.split(",").filter(Boolean) ?? [],
+          videos: product.videos?.split(",").filter(Boolean) ?? [],
         }}
       />
     </div>

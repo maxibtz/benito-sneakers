@@ -278,6 +278,60 @@ export function HomeContentForm({
           empty={{ name: "", role: "", rating: 5, text: "" }}
           addLabel="Agregar testimonio"
         />
+
+        {/* Foto o video por testimonio (unboxing, "llegó la mercadería") */}
+        {testimonials.length > 0 && (
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-white/5">
+            <p className="text-sm font-semibold text-[var(--color-navy)] dark:text-gray-200">
+              Foto o video de cada testimonio
+            </p>
+            <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
+              Opcional pero recomendado: un unboxing o un &quot;llegó la mercadería&quot; real vale
+              más que mil palabras. Imagen hasta 8 MB · video hasta 100 MB.
+            </p>
+            <div className="flex flex-col gap-2">
+              {testimonials.map((t, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-2 dark:border-white/10 dark:bg-white/5 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                    {String(t.name || `Testimonio ${i + 1}`)}
+                    {t.media ? (
+                      <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-500/20 dark:text-green-400">
+                        {t.mediaType === "video" ? "🎬 video cargado" : "📷 foto cargada"}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setTestimonials((prev) =>
+                              prev.map((item, idx) =>
+                                idx === i
+                                  ? { ...item, media: undefined, mediaType: undefined }
+                                  : item
+                              )
+                            )
+                          }
+                          className="ml-1 text-red-500 hover:underline"
+                          aria-label="Quitar archivo"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ) : (
+                      <span className="ml-2 text-xs text-gray-400">sin archivo</span>
+                    )}
+                  </span>
+                  <input
+                    type="file"
+                    name={`testimonialMedia_${i}`}
+                    accept="image/*,video/mp4,video/webm,video/quicktime"
+                    className="text-xs text-gray-600 dark:text-gray-300"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </Block>
 
       {/* 6 — Categorías */}

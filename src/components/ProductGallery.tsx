@@ -3,27 +3,38 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 
+type MediaItem = { src: string; type: "image" | "video" };
+
 export function ProductGallery({
   images,
+  videos = [],
   alt,
 }: {
   images: string[];
+  videos?: string[];
   alt: string;
 }) {
+  // Fotos primero, videos después — la primera foto sigue siendo la portada.
+  const media: MediaItem[] = [
+    ...images.map((src) => ({ src, type: "image" as const })),
+    ...videos.map((src) => ({ src, type: "video" as const })),
+  ];
+
   const [active, setActive] = useState(0);
   const [open, setOpen] = useState(false);
   const [zoom, setZoom] = useState(false);
   const [origin, setOrigin] = useState({ x: 50, y: 50 });
 
-  const hasImages = images.length > 0;
-  const multiple = images.length > 1;
+  const hasMedia = media.length > 0;
+  const multiple = media.length > 1;
+  const current = media[active] ?? media[0];
 
   const go = useCallback(
     (dir: number) => {
       setZoom(false);
-      setActive((i) => (i + dir + images.length) % images.length);
+      setActive((i) => (i + dir + media.length) % media.length);
     },
-    [images.length]
+    [media.length]
   );
 
   const close = useCallback(() => {
@@ -62,7 +73,7 @@ export function ProductGallery({
     setOrigin({ x, y });
   }
 
-  if (!hasImages) {
+  if (!hasMedia) {
     return (
       <div className="flex aspect-square w-full items-center justify-center rounded-2xl border border-white/10 text-[var(--color-store-muted)]">
         Sin imagen
@@ -72,34 +83,46 @@ export function ProductGallery({
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Imagen principal */}
+      {/* Visor principal */}
       <div className="group relative aspect-square w-full">
-        <Image
-          src={images[active]}
-          alt={alt}
-          fill
-          sizes="(max-width: 1024px) 100vw, 55vw"
-          className="shoe-blend object-cover"
-          priority
-        />
+        {current.type === "video" ? (
+          <video
+            key={current.src}
+            src={current.src}
+            controls
+            playsInline
+            preload="metadata"
+            className="absolute inset-0 h-full w-full rounded-2xl object-contain"
+          />
+        ) : (
+          <>
+            <Image
+              src={current.src}
+              alt={alt}
+              fill
+              sizes="(max-width: 1024px) 100vw, 55vw"
+              className="shoe-blend object-cover"
+              priority
+            />
+            {/* Botón abrir lightbox (solo fotos) */}
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              aria-label="Ampliar imagen"
+              className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full border border-white/20 bg-black/40 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm transition hover:bg-black/60"
+            >
+              🔍 Ampliar
+            </button>
+          </>
+        )}
 
-        {/* Botón abrir lightbox */}
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label="Ampliar imagen"
-          className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full border border-white/20 bg-black/40 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm transition hover:bg-black/60"
-        >
-          🔍 Ampliar
-        </button>
-
-        {/* Flechas sobre la imagen principal */}
+        {/* Flechas sobre el visor */}
         {multiple && (
           <>
             <ArrowButton side="left" onClick={() => go(-1)} />
             <ArrowButton side="right" onClick={() => go(1)} />
             <span className="absolute left-3 top-3 rounded-full bg-black/40 px-2.5 py-1 text-xs text-white backdrop-blur-sm">
-              {active + 1}/{images.length}
+              {active + 1}/{media.length}
             </span>
           </>
         )}
@@ -108,34 +131,28 @@ export function ProductGallery({
       {/* Miniaturas */}
       {multiple && (
         <div className="flex flex-wrap gap-2">
-          {images.map((img, i) => (
-            <button
+          {media.map((m, i) => (
+            <Thumb
               key={i}
-              type="button"
+              item={m}
+              index={i}
+              active={i === active}
+              alt={alt}
               onClick={() => setActive(i)}
-              aria-label={`Ver imagen ${i + 1}`}
-              className={`relative h-16 w-16 overflow-hidden rounded-lg border transition ${
-                i === active
-                  ? "border-white"
-                  : "border-white/15 opacity-60 hover:opacity-100"
-              }`}
-            >
-              <Image src={img} alt={`${alt} ${i + 1}`} fill sizes="64px" className="object-cover" />
-            </button>
+            />
           ))}
         </div>
       )}
 
-      {/* Lightbox */}
-      {open && (
+      {/* Lightbox (solo fotos; los videos se reproducen en el visor) */}
+      {open && current.type === "image" && (
         <div
           className="fixed inset-0 z-[100] flex flex-col bg-black/90 backdrop-blur-sm"
           onClick={close}
         >
-          {/* Barra superior */}
           <div className="flex items-center justify-between p-4 text-white" onClick={(e) => e.stopPropagation()}>
             <span className="text-sm text-white/70">
-              {active + 1} / {images.length}
+              {active + 1} / {media.length}
             </span>
             <button
               type="button"
@@ -147,7 +164,6 @@ export function ProductGallery({
             </button>
           </div>
 
-          {/* Imagen ampliada con zoom */}
           <div
             className="relative flex flex-1 items-center justify-center overflow-hidden p-4"
             onClick={(e) => e.stopPropagation()}
@@ -160,7 +176,7 @@ export function ProductGallery({
               onClick={() => setZoom((z) => !z)}
             >
               <Image
-                src={images[active]}
+                src={current.src}
                 alt={alt}
                 fill
                 sizes="100vw"
@@ -175,26 +191,26 @@ export function ProductGallery({
             {multiple && <ArrowButton side="right" onClick={() => go(1)} large />}
           </div>
 
-          {/* Miniaturas en el lightbox */}
           {multiple && (
             <div
               className="flex justify-center gap-2 overflow-x-auto p-4"
               onClick={(e) => e.stopPropagation()}
             >
-              {images.map((img, i) => (
-                <button
+              {media.map((m, i) => (
+                <Thumb
                   key={i}
-                  type="button"
+                  item={m}
+                  index={i}
+                  active={i === active}
+                  alt={alt}
+                  small
                   onClick={() => {
                     setZoom(false);
                     setActive(i);
+                    // Si eligen un video desde el lightbox, lo cerramos para reproducirlo en el visor.
+                    if (m.type === "video") close();
                   }}
-                  className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border transition ${
-                    i === active ? "border-white" : "border-white/20 opacity-50 hover:opacity-100"
-                  }`}
-                >
-                  <Image src={img} alt={`${alt} ${i + 1}`} fill sizes="56px" className="object-cover" />
-                </button>
+                />
               ))}
             </div>
           )}
@@ -205,6 +221,59 @@ export function ProductGallery({
         </div>
       )}
     </div>
+  );
+}
+
+function Thumb({
+  item,
+  index,
+  active,
+  alt,
+  small,
+  onClick,
+}: {
+  item: MediaItem;
+  index: number;
+  active: boolean;
+  alt: string;
+  small?: boolean;
+  onClick: () => void;
+}) {
+  const sizeCls = small ? "h-14 w-14" : "h-16 w-16";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={item.type === "video" ? `Ver video ${index + 1}` : `Ver imagen ${index + 1}`}
+      className={`relative ${sizeCls} shrink-0 overflow-hidden rounded-lg border transition ${
+        active ? "border-white" : "border-white/15 opacity-60 hover:opacity-100"
+      }`}
+    >
+      {item.type === "video" ? (
+        <>
+          <video
+            src={item.src}
+            muted
+            playsInline
+            preload="metadata"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <span className="absolute inset-0 flex items-center justify-center bg-black/30">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 pl-0.5 text-[10px] text-black">
+              ▶
+            </span>
+          </span>
+        </>
+      ) : (
+        <Image
+          src={item.src}
+          alt={`${alt} ${index + 1}`}
+          fill
+          sizes={small ? "56px" : "64px"}
+          className="object-cover"
+        />
+      )}
+    </button>
   );
 }
 

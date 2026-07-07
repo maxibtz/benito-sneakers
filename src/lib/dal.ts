@@ -275,7 +275,14 @@ export async function getSiteSettings() {
 
 export type Benefit = { icon: string; title: string; desc: string };
 export type PsItem = { problem: string; solution: string };
-export type Testimonial = { name: string; role: string; text: string; rating: number };
+export type Testimonial = {
+  name: string;
+  role: string;
+  text: string;
+  rating: number;
+  media?: string; // foto o video del cliente (unboxing, "llegó la mercadería")
+  mediaType?: "image" | "video";
+};
 export type HomeCategory = { label: string; brand: string };
 export type Differential = { icon: string; title: string; desc: string };
 export type Faq = { q: string; a: string };

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { productSchema, parseVariants } from "@/lib/validation";
-import { saveProductImages } from "@/lib/uploads";
+import { saveProductImages, saveProductVideos } from "@/lib/uploads";
 
 export type EchoValues = {
   brand: string;
@@ -14,6 +14,7 @@ export type EchoValues = {
   sku: string;
   sectionId: string;
   variants: string;
+  variantsJson: string;
   active: boolean;
 };
 
@@ -28,6 +29,7 @@ function echoValues(formData: FormData): EchoValues {
     sku: String(formData.get("sku") ?? ""),
     sectionId: String(formData.get("sectionId") ?? ""),
     variants: String(formData.get("variants") ?? ""),
+    variantsJson: String(formData.get("variantsJson") ?? ""),
     active: formData.get("active") === "on",
   };
 }
@@ -36,6 +38,31 @@ function echoValues(formData: FormData): EchoValues {
 function allErrors(parsed: { error: { issues: { message: string }[] } }): string {
   const msgs = [...new Set(parsed.error.issues.map((i) => i.message))];
   return "Faltan o hay errores en: " + msgs.join(" · ");
+}
+
+/**
+ * Talles y stock: el form manda filas estructuradas como JSON
+ * ([{size, stock}]). Se acepta también el formato viejo de texto
+ * ("35, 2" por línea) como fallback.
+ */
+function resolveVariants(formData: FormData): { size: string; stock: number }[] {
+  const raw = formData.get("variantsJson");
+  if (typeof raw === "string" && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map((v) => ({
+            size: String(v?.size ?? "").trim(),
+            stock: Math.max(0, Math.floor(Number(v?.stock)) || 0),
+          }))
+          .filter((v) => v.size.length > 0);
+      }
+    } catch {
+      // caemos al formato viejo
+    }
+  }
+  return parseVariants(String(formData.get("variants") ?? ""));
 }
 
 export async function createProductAction(
@@ -60,9 +87,9 @@ export async function createProductAction(
     return { error: allErrors(parsed), values };
   }
 
-  const variants = parseVariants(String(formData.get("variants") ?? ""));
+  const variants = resolveVariants(formData);
   if (variants.length === 0) {
-    return { error: "Agregá al menos un talle con su stock (ej: 38, 5).", values };
+    return { error: "Agregá al menos un talle con su cantidad.", values };
   }
 
   const existing = await db.product.findUnique({ where: { sku: parsed.data.sku } });
@@ -76,6 +103,8 @@ export async function createProductAction(
   const { sectionId, category } = await resolveSection(formData);
   const files = formData.getAll("images") as File[];
   const imagePaths = await saveProductImages(files, parsed.data.sku);
+  const videoFiles = formData.getAll("videos") as File[];
+  const videoPaths = await saveProductVideos(videoFiles, parsed.data.sku);
 
   await db.product.create({
     data: {
@@ -86,6 +115,7 @@ export async function createProductAction(
       cost,
       costBreakdown: breakdown,
       images: imagePaths.join(","),
+      videos: videoPaths.join(","),
       variants: { create: variants },
     },
   });
@@ -118,9 +148,9 @@ export async function updateProductAction(
     return { error: allErrors(parsed), values };
   }
 
-  const variants = parseVariants(String(formData.get("variants") ?? ""));
+  const variants = resolveVariants(formData);
   if (variants.length === 0) {
-    return { error: "Agregá al menos un talle con su stock (ej: 38, 5).", values };
+    return { error: "Agregá al menos un talle con su cantidad.", values };
   }
 
   const current = await db.product.findUnique({ where: { id } });
@@ -137,6 +167,11 @@ export async function updateProductAction(
   // Imágenes existentes que el usuario decidió conservar, en el orden que eligió.
   const keptImages = parseExistingImages(formData.get("existingImages"), current.images);
   const allImages = [...keptImages, ...newImagePaths];
+  // Videos: mismos criterios que las imágenes (conservados + nuevos).
+  const videoFiles = (formData.getAll("videos") as File[]).filter((f) => f.size > 0);
+  const newVideoPaths = await saveProductVideos(videoFiles, parsed.data.sku);
+  const keptVideos = parseExistingImages(formData.get("existingVideos"), current.videos);
+  const allVideos = [...keptVideos, ...newVideoPaths];
 
   await db.$transaction([
     db.variant.deleteMany({ where: { productId: id } }),
@@ -150,6 +185,7 @@ export async function updateProductAction(
         cost,
         costBreakdown: breakdown,
         images: allImages.join(","),
+        videos: allVideos.join(","),
         variants: { create: variants },
       },
     }),

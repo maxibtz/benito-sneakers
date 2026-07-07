@@ -34,7 +34,11 @@ export default async function ProductDetailPage({
 
       <div className="grid gap-10 lg:grid-cols-[1.1fr_1fr]">
         {/* GALLERY */}
-        <ProductGallery images={images} alt={`${product.brand} ${product.model}`} />
+        <ProductGallery
+          images={images}
+          videos={product.videos?.split(",").filter(Boolean) ?? []}
+          alt={`${product.brand} ${product.model}`}
+        />
 
         {/* INFO */}
         <div className="flex flex-col lg:pt-4">

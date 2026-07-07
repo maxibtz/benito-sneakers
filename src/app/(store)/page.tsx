@@ -197,8 +197,30 @@ export default async function StoreHomePage() {
             {home.testimonials.map((t, i) => (
               <div
                 key={i}
-                className="flex flex-col rounded-2xl border border-white/10 bg-[var(--color-store-surface)] p-6"
+                className="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-[var(--color-store-surface)]"
               >
+                {/* Foto o video real del cliente (unboxing / llegó la mercadería) */}
+                {t.media &&
+                  (t.mediaType === "video" ? (
+                    <video
+                      src={t.media}
+                      controls
+                      playsInline
+                      preload="metadata"
+                      className="aspect-video w-full bg-black object-contain"
+                    />
+                  ) : (
+                    <div className="relative aspect-video w-full">
+                      <Image
+                        src={t.media}
+                        alt={`Compra de ${t.name}`}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                        className="object-cover"
+                      />
+                    </div>
+                  ))}
+                <div className="flex flex-1 flex-col p-6">
                 <div className="mb-3 text-[var(--color-lilac)]">
                   {"★".repeat(Math.max(0, Math.min(5, Math.round(t.rating || 0))))}
                   <span className="text-white/20">
@@ -214,6 +236,7 @@ export default async function StoreHomePage() {
                     <p className="text-sm font-medium text-white">{t.name}</p>
                     {t.role && <p className="text-xs text-[var(--color-store-muted)]">{t.role}</p>}
                   </div>
+                </div>
                 </div>
               </div>
             ))}

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
-import { saveBannerImage, saveProductImages } from "@/lib/uploads";
+import { saveBannerImage, saveProductImages, saveTestimonialMedia } from "@/lib/uploads";
 
 export type SettingsState = { ok?: boolean; error?: string };
 
@@ -70,6 +70,31 @@ function cleanJsonArray(raw: FormDataEntryValue | null): string {
   }
 }
 
+/**
+ * Suma a cada testimonio la foto/video subida (input testimonialMedia_{i}).
+ * El JSON ya trae media/mediaType existentes si no se cambió nada.
+ */
+async function mergeTestimonialMedia(
+  testimonialsJson: string,
+  formData: FormData
+): Promise<string> {
+  try {
+    const items = JSON.parse(testimonialsJson);
+    if (!Array.isArray(items)) return testimonialsJson;
+    for (let i = 0; i < items.length; i++) {
+      const file = formData.get(`testimonialMedia_${i}`);
+      const saved = await saveTestimonialMedia(file instanceof File ? file : null);
+      if (saved) {
+        items[i].media = saved.url;
+        items[i].mediaType = saved.type;
+      }
+    }
+    return JSON.stringify(items);
+  } catch {
+    return testimonialsJson;
+  }
+}
+
 export async function updateHomeContentAction(
   _prev: SettingsState,
   formData: FormData
@@ -110,7 +135,10 @@ export async function updateHomeContentAction(
 
     testimonialsTitle: str("testimonialsTitle"),
     testimonialsSubtitle: str("testimonialsSubtitle"),
-    testimonials: cleanJsonArray(formData.get("testimonials")),
+    testimonials: await mergeTestimonialMedia(
+      cleanJsonArray(formData.get("testimonials")),
+      formData
+    ),
 
     categoriesTitle: str("categoriesTitle"),
     categoriesSubtitle: str("categoriesSubtitle"),

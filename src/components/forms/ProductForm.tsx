@@ -19,6 +19,7 @@ type ProductFormProps = {
     active: boolean;
     variants: { size: string; stock: number }[];
     images?: string[];
+    videos?: string[];
   };
   submitLabel: string;
 };
@@ -41,6 +42,29 @@ export function ProductForm({ action, sections, defaultValues, submitLabel }: Pr
   );
   // Imágenes ya cargadas (se pueden reordenar y borrar). La primera es la principal.
   const [keptImages, setKeptImages] = useState<string[]>(defaultValues?.images ?? []);
+  // Videos de muestra ya cargados (se pueden quitar).
+  const [keptVideos, setKeptVideos] = useState<string[]>(defaultValues?.videos ?? []);
+
+  // Talles y stock en filas (talle y cantidad por separado).
+  const [sizeRows, setSizeRows] = useState<{ size: string; stock: string }[]>(
+    defaultValues && defaultValues.variants.length > 0
+      ? defaultValues.variants.map((v) => ({ size: v.size, stock: String(v.stock) }))
+      : [{ size: "", stock: "" }]
+  );
+
+  function updateSizeRow(i: number, key: "size" | "stock", value: string) {
+    setSizeRows((prev) => {
+      const next = prev.slice();
+      next[i] = { ...next[i], [key]: value };
+      return next;
+    });
+  }
+  function addSizeRow() {
+    setSizeRows((prev) => [...prev, { size: "", stock: "" }]);
+  }
+  function removeSizeRow(i: number) {
+    setSizeRows((prev) => prev.filter((_, idx) => idx !== i));
+  }
 
   function moveImage(i: number, dir: -1 | 1) {
     setKeptImages((prev) => {
@@ -79,10 +103,6 @@ export function ProductForm({ action, sections, defaultValues, submitLabel }: Pr
     profit != null && effectivePrice > 0 ? Math.round((profit / effectivePrice) * 100) : null;
   const markupPct = profit != null && costN > 0 ? Math.round((profit / costN) * 100) : null;
 
-  const variantsText = defaultValues?.variants
-    .map((v) => `${v.size}, ${v.stock}`)
-    .join("\n");
-
   // Si hubo error, el server nos devuelve lo cargado (state.values) para no perderlo.
   const ev = state.values;
   const dvBrand = ev?.brand ?? defaultValues?.brand;
@@ -90,7 +110,6 @@ export function ProductForm({ action, sections, defaultValues, submitLabel }: Pr
   const dvDescription = ev?.description ?? defaultValues?.description;
   const dvSku = ev?.sku ?? defaultValues?.sku;
   const dvSectionId = ev?.sectionId ?? defaultValues?.sectionId ?? "";
-  const dvVariants = ev?.variants ?? variantsText;
   const dvActive = ev?.active ?? defaultValues?.active ?? true;
 
   return (
@@ -270,19 +289,73 @@ export function ProductForm({ action, sections, defaultValues, submitLabel }: Pr
         )}
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="variants" className="text-sm font-medium text-[var(--color-navy)] dark:text-gray-200">
-          Talles y stock (uno por línea: <code>talle, stock</code>)
-        </label>
-        <textarea
-          id="variants"
-          name="variants"
-          rows={6}
-          required
-          defaultValue={dvVariants}
-          placeholder={"38, 5\n39, 3\n40, 8"}
-          className="rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm text-gray-900 outline-none focus:border-[var(--color-navy)] dark:border-gray-600 dark:bg-white/5 dark:text-white"
+      {/* Talles y stock — filas con talle y cantidad separados */}
+      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-white/5">
+        <input
+          type="hidden"
+          name="variantsJson"
+          value={JSON.stringify(
+            sizeRows.map((r) => ({ size: r.size.trim(), stock: Number(r.stock) || 0 }))
+          )}
         />
+        <div className="mb-2 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-[var(--color-navy)] dark:text-gray-200">
+              Talles y stock
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Un talle por fila, con su cantidad al lado.
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Stock total</p>
+            <p className="text-lg font-bold text-[var(--color-navy)] dark:text-white">
+              {sizeRows.reduce((sum, r) => sum + (Number(r.stock) || 0), 0)}
+            </p>
+          </div>
+        </div>
+
+        <div className="mb-1 grid grid-cols-[1fr_8rem_2.25rem] gap-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+          <span>Talle</span>
+          <span>Cantidad</span>
+          <span />
+        </div>
+        <div className="flex flex-col gap-2">
+          {sizeRows.map((row, i) => (
+            <div key={i} className="grid grid-cols-[1fr_8rem_2.25rem] gap-2">
+              <input
+                value={row.size}
+                onChange={(e) => updateSizeRow(i, "size", e.target.value)}
+                placeholder="Ej: 38"
+                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-[var(--color-navy)] dark:border-gray-600 dark:bg-white/5 dark:text-white"
+              />
+              <input
+                value={row.stock}
+                onChange={(e) => updateSizeRow(i, "stock", e.target.value)}
+                type="number"
+                min={0}
+                placeholder="0"
+                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-[var(--color-navy)] dark:border-gray-600 dark:bg-white/5 dark:text-white"
+              />
+              <button
+                type="button"
+                onClick={() => removeSizeRow(i)}
+                disabled={sizeRows.length === 1}
+                className="flex items-center justify-center rounded-md text-red-500 hover:bg-red-50 disabled:opacity-30 dark:hover:bg-red-500/10"
+                aria-label="Quitar talle"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={addSizeRow}
+          className="mt-3 w-fit rounded-md border border-dashed border-[var(--color-navy)] px-3 py-1.5 text-sm font-medium text-[var(--color-navy)] hover:bg-[var(--color-lilac-light)] dark:border-[var(--color-lilac)] dark:text-[var(--color-lilac-light)] dark:hover:bg-[var(--color-lilac)]/10"
+        >
+          + Agregar talle
+        </button>
       </div>
 
       {/* Imágenes ya cargadas: reordenar (la 1ª es la principal) y borrar */}
@@ -356,6 +429,49 @@ export function ProductForm({ action, sections, defaultValues, submitLabel }: Pr
           multiple
           className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-white/5 dark:text-white"
         />
+      </div>
+
+      {/* Videos de muestra */}
+      <input type="hidden" name="existingVideos" value={JSON.stringify(keptVideos)} />
+      <div className="flex flex-col gap-2">
+        <label htmlFor="videos" className="text-sm font-medium text-[var(--color-navy)] dark:text-gray-200">
+          Videos de muestra{" "}
+          <span className="font-normal text-gray-500 dark:text-gray-400">
+            (opcional — el cliente los ve junto a las fotos)
+          </span>
+        </label>
+        {keptVideos.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            {keptVideos.map((src) => (
+              <div
+                key={src}
+                className="flex items-center justify-between gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5"
+              >
+                <span className="flex items-center gap-2 truncate text-gray-700 dark:text-gray-200">
+                  🎬 <span className="truncate">{src.split("/").pop()}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setKeptVideos((prev) => prev.filter((v) => v !== src))}
+                  className="shrink-0 text-red-500 hover:underline"
+                >
+                  Quitar
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <input
+          id="videos"
+          name="videos"
+          type="file"
+          accept="video/mp4,video/webm,video/quicktime"
+          multiple
+          className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-white/5 dark:text-white"
+        />
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          MP4, WebM o MOV · hasta 100 MB por video. Ideal: 10-30 segundos mostrando el par en mano.
+        </p>
       </div>
 
       <label className="flex items-center gap-2 text-sm text-[var(--color-navy)] dark:text-gray-200">

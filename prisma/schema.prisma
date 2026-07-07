@@ -39,6 +39,7 @@ model Product {
   cost        Float?    @default(0) // costo total del producto (suma de costBreakdown)
   costBreakdown String  @default("[]") // [{name, amount}] ej: flete, pase, envío
   images      String // comma-separated URLs / filenames
+  videos      String    @default("") // comma-separated video URLs (muestras en video)
   active      Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
