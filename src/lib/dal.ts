@@ -48,7 +48,37 @@ export async function getDashboardStats() {
   };
 }
 
-export type ManualSaleItem = { description: string; quantity: number; unitPrice: number };
+export type ManualSaleItem = {
+  productId?: string;
+  variantId?: string;
+  size?: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+};
+
+export type SaleProduct = {
+  id: string;
+  label: string;
+  price: number;
+  cost: number;
+  variants: { id: string; size: string; stock: number }[];
+};
+
+/** Productos para el selector de ventas manuales (precio, costo y talles). */
+export async function getProductsForSale(): Promise<SaleProduct[]> {
+  const products = await db.product.findMany({
+    orderBy: [{ brand: "asc" }, { model: "asc" }],
+    include: { variants: { orderBy: { size: "asc" } } },
+  });
+  return products.map((p) => ({
+    id: p.id,
+    label: `${p.brand} ${p.model}`,
+    price: p.salePrice && p.salePrice < p.price ? p.salePrice : p.price,
+    cost: p.cost ?? 0,
+    variants: p.variants.map((v) => ({ id: v.id, size: v.size, stock: v.stock })),
+  }));
+}
 
 export type ManualSaleRow = {
   id: string;
@@ -68,6 +98,9 @@ function parseSaleItems(raw: string): ManualSaleItem[] {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
     return parsed.map((it) => ({
+      productId: it?.productId ? String(it.productId) : undefined,
+      variantId: it?.variantId ? String(it.variantId) : undefined,
+      size: it?.size ? String(it.size) : undefined,
       description: String(it?.description ?? ""),
       quantity: Number(it?.quantity) || 0,
       unitPrice: Number(it?.unitPrice) || 0,
