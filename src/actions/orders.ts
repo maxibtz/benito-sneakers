@@ -9,6 +9,7 @@ import { notifyNewOrder } from "@/lib/notify";
 import { evaluateCoupon } from "@/lib/coupon";
 import { getShippingConfig } from "@/lib/dal";
 import { computeShipping, canPickup, type ShippingMethod } from "@/lib/shipping";
+import { quoteZipnova, isZipnovaConfigured } from "@/lib/zipnova";
 import { sendTrackingEmail, sendPaymentReceivedEmail } from "@/lib/emails";
 import { rateLimit, waitText } from "@/lib/rate-limit";
 import type { OrderStatus, PaymentMethod } from "@/generated/prisma/enums";
@@ -167,6 +168,7 @@ export type CreateOrderInput = {
   dni: string;
   paymentMethod: PaymentMethod;
   shippingMethod?: ShippingMethod;
+  shippingService?: string; // código del servicio Zipnova elegido (si aplica)
   couponCode?: string;
   items: { productId: string; variantId: string; quantity: number; unitPrice: number }[];
 };
@@ -225,12 +227,29 @@ export async function createOrderAction(input: CreateOrderInput) {
     input.shippingMethod === "pickup" && canPickup(shippingConfig, input.province)
       ? "pickup"
       : "delivery";
-  const shippingCost = computeShipping(
-    shippingConfig,
-    input.province,
-    afterDiscount,
-    shippingMethod
-  );
+
+  const totalQty = items.reduce((sum, it) => sum + it.quantity, 0);
+  const freeByThreshold =
+    shippingConfig.freeThreshold > 0 && afterDiscount >= shippingConfig.freeThreshold;
+
+  let shippingCost: number;
+  if (shippingMethod === "pickup" || freeByThreshold) {
+    shippingCost = 0;
+  } else if (input.shippingService && isZipnovaConfigured()) {
+    // Re-cotizamos en el servidor y usamos el precio del servicio elegido
+    // (así el cliente no puede falsear el costo). Si falla, caemos a la tabla.
+    const q = await quoteZipnova({
+      zipcode: input.postalCode,
+      quantity: totalQty,
+      declaredValue: afterDiscount,
+    });
+    const opt = q.ok ? q.options.find((o) => o.code === input.shippingService) : null;
+    shippingCost = opt
+      ? opt.price
+      : computeShipping(shippingConfig, input.province, afterDiscount, "delivery");
+  } else {
+    shippingCost = computeShipping(shippingConfig, input.province, afterDiscount, "delivery");
+  }
   const total = afterDiscount + shippingCost;
 
   const order = await db.$transaction(async (tx) => {

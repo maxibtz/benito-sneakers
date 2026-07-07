@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/contexts/CartContext";
 import { createOrderAction } from "@/actions/orders";
@@ -12,6 +12,7 @@ import {
   type ShippingConfig,
   type ShippingMethod,
 } from "@/lib/shipping";
+import type { ZipnovaOption } from "@/lib/zipnova";
 
 function formatARS(value: number) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(value);
@@ -47,7 +48,17 @@ export function CheckoutForm({
   const [error, setError] = useState<string | null>(null);
 
   const [province, setProvince] = useState("");
+  const [postalCode, setPostalCode] = useState("");
   const [shippingMethod, setShippingMethod] = useState<ShippingMethod>("delivery");
+
+  // Cotización por CP (Zipnova). Si no está disponible, se usa la tabla por provincia.
+  const [quoting, setQuoting] = useState(false);
+  const [quoteOptions, setQuoteOptions] = useState<ZipnovaOption[]>([]);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [zipnovaAvailable, setZipnovaAvailable] = useState(true);
+  const [selectedService, setSelectedService] = useState("");
+
+  const totalQty = items.reduce((s, i) => s + i.quantity, 0);
 
   const [couponInput, setCouponInput] = useState("");
   const [coupon, setCoupon] = useState<{ code: string; discountPercent: number } | null>(null);
@@ -59,12 +70,73 @@ export function CheckoutForm({
 
   const pickupAllowed = canPickup(shipping, province);
   const effectiveMethod: ShippingMethod = pickupAllowed ? shippingMethod : "delivery";
-  const shippingCost = computeShipping(shipping, province, afterDiscount, effectiveMethod);
   const freeByThreshold =
     effectiveMethod === "delivery" &&
     shipping.freeThreshold > 0 &&
     afterDiscount >= shipping.freeThreshold;
+
+  const selectedOption = quoteOptions.find((o) => o.code === selectedService) ?? null;
+  const tableCost = computeShipping(shipping, province, afterDiscount, "delivery");
+  let shippingCost: number;
+  if (effectiveMethod === "pickup" || freeByThreshold) shippingCost = 0;
+  else if (selectedOption) shippingCost = selectedOption.price;
+  else shippingCost = tableCost;
   const finalTotal = afterDiscount + shippingCost;
+
+  // Cotiza con Zipnova cuando hay un CP válido (4 dígitos). Con debounce.
+  useEffect(() => {
+    const zip = postalCode.trim();
+    if (!zipnovaAvailable || effectiveMethod === "pickup" || !/^[A-Za-z]?\d{4}/.test(zip)) {
+      setQuoteOptions([]);
+      setSelectedService("");
+      setQuoteError(null);
+      return;
+    }
+    let cancelled = false;
+    setQuoting(true);
+    setQuoteError(null);
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/envio", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ zipcode: zip, quantity: totalQty, declaredValue: afterDiscount }),
+        });
+        const data = await res.json();
+        if (cancelled) return;
+        if (data.configured === false) {
+          setZipnovaAvailable(false); // no configurado: usamos la tabla y no reintentamos
+          setQuoteOptions([]);
+          return;
+        }
+        if (data.ok) {
+          setQuoteOptions(data.options);
+          setSelectedService((prev) =>
+            data.options.some((o: ZipnovaOption) => o.code === prev)
+              ? prev
+              : (data.options[0]?.code ?? "")
+          );
+          setQuoteError(null);
+        } else {
+          setQuoteOptions([]);
+          setSelectedService("");
+          setQuoteError(data.error ?? "No pudimos cotizar el envío.");
+        }
+      } catch {
+        if (!cancelled) {
+          setQuoteOptions([]);
+          setQuoteError("No pudimos cotizar el envío. Podés continuar igual.");
+        }
+      } finally {
+        if (!cancelled) setQuoting(false);
+      }
+    }, 600);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [postalCode, effectiveMethod, totalQty]);
 
   async function applyCoupon() {
     setCouponMsg(null);
@@ -106,10 +178,11 @@ export function CheckoutForm({
         floorApt: String(formData.get("floorApt") || ""),
         city: String(formData.get("city")),
         province,
-        postalCode: String(formData.get("postalCode")),
+        postalCode: postalCode.trim(),
         dni: String(formData.get("dni")),
         paymentMethod,
         shippingMethod: effectiveMethod,
+        shippingService: effectiveMethod === "delivery" ? selectedService || undefined : undefined,
         couponCode: coupon?.code,
         items: items.map((i) => ({
           productId: i.productId,
@@ -169,7 +242,21 @@ export function CheckoutForm({
             ))}
           </select>
         </div>
-        <Input label="Código postal" name="postalCode" required />
+        <div className="flex flex-col gap-1">
+          <label htmlFor="postalCode" className="text-sm text-[var(--color-store-muted)]">
+            Código postal
+          </label>
+          <input
+            id="postalCode"
+            name="postalCode"
+            required
+            value={postalCode}
+            onChange={(e) => setPostalCode(e.target.value)}
+            inputMode="numeric"
+            placeholder="Ej: 3600"
+            className="rounded-xl border border-white/15 bg-white/5 px-3.5 py-2.5 text-white outline-none transition-colors focus:border-white"
+          />
+        </div>
       </div>
 
       <Input label="DNI" name="dni" required />
@@ -181,25 +268,81 @@ export function CheckoutForm({
         </p>
         {!province ? (
           <p className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-[var(--color-store-muted)]">
-            Elegí tu provincia para ver el costo de envío.
+            Elegí tu provincia y código postal para ver el costo de envío.
           </p>
         ) : (
           <div className="flex flex-col gap-2">
-            <label className="flex cursor-pointer items-center justify-between gap-2.5 rounded-xl border border-white/12 px-4 py-3 text-sm text-white/85 transition-colors has-[:checked]:border-white has-[:checked]:bg-white/5">
-              <span className="flex items-center gap-2.5">
-                <input
-                  type="radio"
-                  name="shippingMethod"
-                  checked={effectiveMethod === "delivery"}
-                  onChange={() => setShippingMethod("delivery")}
-                  className="accent-[var(--color-lilac-vivid)]"
-                />
-                Envío a domicilio ({province})
-              </span>
-              <span className="font-medium text-white">
-                {freeByThreshold ? "Gratis" : formatARS(computeShipping(shipping, province, afterDiscount, "delivery"))}
-              </span>
-            </label>
+            {/* Envío a domicilio: opciones cotizadas por CP, o tarifa por provincia */}
+            {effectiveMethod === "delivery" && quoting && (
+              <p className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-[var(--color-store-muted)]">
+                Cotizando envío para el CP {postalCode.trim()}…
+              </p>
+            )}
+
+            {!quoting && quoteOptions.length > 0 ? (
+              quoteOptions.map((opt) => (
+                <label
+                  key={opt.code}
+                  className="flex cursor-pointer items-center justify-between gap-2.5 rounded-xl border border-white/12 px-4 py-3 text-sm text-white/85 transition-colors has-[:checked]:border-white has-[:checked]:bg-white/5"
+                >
+                  <span className="flex items-center gap-2.5">
+                    <input
+                      type="radio"
+                      name="shippingChoice"
+                      checked={effectiveMethod === "delivery" && selectedService === opt.code}
+                      onChange={() => {
+                        setShippingMethod("delivery");
+                        setSelectedService(opt.code);
+                      }}
+                      className="accent-[var(--color-lilac-vivid)]"
+                    />
+                    <span className="flex flex-col">
+                      <span>
+                        {opt.name}
+                        {opt.carrier ? ` · ${opt.carrier}` : ""}
+                        {opt.cheapest ? " 🏷️" : ""}
+                      </span>
+                      {opt.deliveryEstimate && (
+                        <span className="text-xs text-[var(--color-store-muted)]">
+                          Llega aprox. {new Date(opt.deliveryEstimate).toLocaleDateString("es-AR")}
+                        </span>
+                      )}
+                    </span>
+                  </span>
+                  <span className="font-medium text-white">
+                    {freeByThreshold ? "Gratis" : formatARS(opt.price)}
+                  </span>
+                </label>
+              ))
+            ) : (
+              !quoting && (
+                <label className="flex cursor-pointer items-center justify-between gap-2.5 rounded-xl border border-white/12 px-4 py-3 text-sm text-white/85 transition-colors has-[:checked]:border-white has-[:checked]:bg-white/5">
+                  <span className="flex items-center gap-2.5">
+                    <input
+                      type="radio"
+                      name="shippingChoice"
+                      checked={effectiveMethod === "delivery"}
+                      onChange={() => {
+                        setShippingMethod("delivery");
+                        setSelectedService("");
+                      }}
+                      className="accent-[var(--color-lilac-vivid)]"
+                    />
+                    Envío a domicilio ({province})
+                  </span>
+                  <span className="font-medium text-white">
+                    {freeByThreshold ? "Gratis" : formatARS(tableCost)}
+                  </span>
+                </label>
+              )
+            )}
+
+            {quoteError && !quoting && (
+              <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-300">
+                {quoteError} Usamos la tarifa estándar; podés continuar sin problema.
+              </p>
+            )}
+
             {pickupAllowed && (
               <label className="flex cursor-pointer items-center justify-between gap-2.5 rounded-xl border border-white/12 px-4 py-3 text-sm text-white/85 transition-colors has-[:checked]:border-white has-[:checked]:bg-white/5">
                 <span className="flex items-center gap-2.5">
