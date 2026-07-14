@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import {
   createCantinaSupplierAction,
   updateCantinaSupplierAction,
+  deleteCantinaSupplierAction,
   type CantinaSupplierFormState,
 } from "@/actions/cantina-suppliers";
 
@@ -71,6 +72,24 @@ export function SupplierEditForm({
       {state.error && (
         <p className="text-xs text-red-600 dark:text-red-400 sm:col-span-4">{state.error}</p>
       )}
+    </form>
+  );
+}
+
+/** Botón de borrar con confirmación (client, porque usa onClick). */
+export function SupplierDeleteButton({ id, name }: { id: string; name: string }) {
+  return (
+    <form action={deleteCantinaSupplierAction.bind(null, id)}>
+      <button
+        type="submit"
+        onClick={(e) => {
+          if (!confirm(`¿Eliminar el proveedor "${name}"? Sus productos quedan sin proveedor.`))
+            e.preventDefault();
+        }}
+        className="font-medium text-red-600 hover:underline dark:text-red-400"
+      >
+        Eliminar
+      </button>
     </form>
   );
 }

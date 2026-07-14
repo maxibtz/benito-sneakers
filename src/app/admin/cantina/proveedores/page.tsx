@@ -1,6 +1,9 @@
 import { getCantinaSuppliersWithStats } from "@/lib/cantina-dal";
-import { deleteCantinaSupplierAction } from "@/actions/cantina-suppliers";
-import { NewSupplierForm, SupplierEditForm } from "@/components/forms/CantinaSupplierForms";
+import {
+  NewSupplierForm,
+  SupplierEditForm,
+  SupplierDeleteButton,
+} from "@/components/forms/CantinaSupplierForms";
 
 export default async function CantinaProveedoresPage() {
   const suppliers = await getCantinaSuppliersWithStats();
@@ -29,18 +32,7 @@ export default async function CantinaProveedoresPage() {
             </div>
             <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
               <span>{s.productCount} producto{s.productCount === 1 ? "" : "s"}</span>
-              <form action={deleteCantinaSupplierAction.bind(null, s.id)}>
-                <button
-                  type="submit"
-                  onClick={(e) => {
-                    if (!confirm(`¿Eliminar el proveedor "${s.name}"? Sus productos quedan sin proveedor.`))
-                      e.preventDefault();
-                  }}
-                  className="font-medium text-red-600 hover:underline dark:text-red-400"
-                >
-                  Eliminar
-                </button>
-              </form>
+              <SupplierDeleteButton id={s.id} name={s.name} />
             </div>
           </div>
         ))}
