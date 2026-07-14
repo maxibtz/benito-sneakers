@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import {
   createCantinaProductAction,
   updateCantinaProductAction,
@@ -15,12 +15,18 @@ const labelClass = "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-
 
 const UNIT_PRESETS = ["unidad", "pack", "litro", "kg", "botella", "lata"];
 
+function formatARS(value: number) {
+  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(value);
+}
+
 export type CantinaProductFormProduct = {
   id: string;
   name: string;
   categoryId: string | null;
   supplierId: string | null;
   cost: number;
+  caseCost: number;
+  unitsPerCase: number;
   price: number;
   stock: number;
   minStock: number;
@@ -41,6 +47,18 @@ export function CantinaProductForm({
     ? updateCantinaProductAction.bind(null, product.id)
     : createCantinaProductAction;
   const [state, action, pending] = useActionState(boundAction, initial);
+
+  // Modo de compra: por unidad (costo directo) o por cajón/paquete (se
+  // autocalcula el costo por unidad). Recordamos el modo si ya venía cargado así.
+  const [mode, setMode] = useState<"unit" | "case">(
+    product && product.unitsPerCase > 1 ? "case" : "unit"
+  );
+  const [caseCost, setCaseCost] = useState(product?.caseCost ? String(product.caseCost) : "");
+  const [unitsPerCase, setUnitsPerCase] = useState(
+    product?.unitsPerCase && product.unitsPerCase > 1 ? String(product.unitsPerCase) : ""
+  );
+  const computedUnitCost =
+    Number(caseCost) > 0 && Number(unitsPerCase) > 0 ? Number(caseCost) / Number(unitsPerCase) : 0;
 
   return (
     <form
@@ -100,19 +118,7 @@ export function CantinaProductForm({
           </datalist>
         </div>
         <div>
-          <label className={labelClass}>Costo de adquisición</label>
-          <input
-            name="cost"
-            type="number"
-            min={0}
-            step="0.01"
-            defaultValue={product?.cost}
-            placeholder="$"
-            className={inputClass}
-          />
-        </div>
-        <div>
-          <label className={labelClass}>Precio de venta *</label>
+          <label className={labelClass}>Precio de venta (por unidad) *</label>
           <input
             name="price"
             type="number"
@@ -124,7 +130,7 @@ export function CantinaProductForm({
           />
         </div>
         <div>
-          <label className={labelClass}>Stock actual</label>
+          <label className={labelClass}>Stock actual (en unidades)</label>
           <input
             name="stock"
             type="number"
@@ -143,6 +149,87 @@ export function CantinaProductForm({
             className={inputClass}
           />
         </div>
+      </div>
+
+      {/* Costo: por unidad, o por cajón/paquete (se calcula solo) */}
+      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-white/5">
+        <p className="mb-2 text-sm font-semibold text-[var(--color-navy)] dark:text-gray-200">
+          ¿Cómo comprás este producto?
+        </p>
+        <div className="mb-3 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setMode("unit")}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+              mode === "unit"
+                ? "bg-[var(--color-cantina-vivid)] text-white"
+                : "bg-white text-gray-600 dark:bg-white/10 dark:text-gray-300"
+            }`}
+          >
+            Por unidad
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("case")}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+              mode === "case"
+                ? "bg-[var(--color-cantina-vivid)] text-white"
+                : "bg-white text-gray-600 dark:bg-white/10 dark:text-gray-300"
+            }`}
+          >
+            Por cajón / paquete
+          </button>
+        </div>
+
+        {mode === "unit" ? (
+          <div className="sm:w-1/2">
+            <label className={labelClass}>Costo por unidad</label>
+            <input
+              name="cost"
+              type="number"
+              min={0}
+              step="0.01"
+              defaultValue={product?.cost}
+              placeholder="$"
+              className={inputClass}
+            />
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className={labelClass}>Costo del cajón/paquete completo</label>
+                <input
+                  name="caseCost"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={caseCost}
+                  onChange={(e) => setCaseCost(e.target.value)}
+                  placeholder="Ej: 22000"
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Unidades por cajón/paquete</label>
+                <input
+                  name="unitsPerCase"
+                  type="number"
+                  min={1}
+                  value={unitsPerCase}
+                  onChange={(e) => setUnitsPerCase(e.target.value)}
+                  placeholder="Ej: 8"
+                  className={inputClass}
+                />
+              </div>
+            </div>
+            {computedUnitCost > 0 && (
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                = <strong className="text-[var(--color-navy)] dark:text-white">{formatARS(computedUnitCost)}</strong> de costo por unidad
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       <label className="flex w-fit items-center gap-2 text-sm text-gray-700 dark:text-gray-300">

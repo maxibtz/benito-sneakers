@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getCantinaCategories, getCantinaSuppliers, getCantinaProduct } from "@/lib/cantina-dal";
 import { CantinaProductForm } from "@/components/forms/CantinaProductForm";
+import { CantinaRestockForm } from "@/components/forms/CantinaRestockForm";
 
 export default async function EditarCantinaProductoPage({
   params,
@@ -23,6 +24,15 @@ export default async function EditarCantinaProductoPage({
         </h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">{product.name}</p>
       </div>
+      {product.unitsPerCase > 1 && (
+        <CantinaRestockForm
+          productId={product.id}
+          productName={product.name}
+          unitsPerCase={product.unitsPerCase}
+          currentStock={product.stock}
+        />
+      )}
+
       <CantinaProductForm
         categories={categories}
         suppliers={suppliers}
@@ -32,6 +42,8 @@ export default async function EditarCantinaProductoPage({
           categoryId: product.categoryId,
           supplierId: product.supplierId,
           cost: product.cost,
+          caseCost: product.caseCost,
+          unitsPerCase: product.unitsPerCase,
           price: product.price,
           stock: product.stock,
           minStock: product.minStock,

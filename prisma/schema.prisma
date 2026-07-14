@@ -298,8 +298,10 @@ model CantinaProduct {
   categoryId String?
   supplier   CantinaSupplier?   @relation(fields: [supplierId], references: [id])
   supplierId String?
-  cost       Float              @default(0) // costo de adquisición
-  price      Float              @default(0) // precio de venta
+  cost         Float @default(0) // costo de adquisición POR UNIDAD (se autocalcula si se carga por cajón)
+  caseCost     Float @default(0) // costo del cajón/paquete completo, si se compra así (0 = se compra por unidad)
+  unitsPerCase Int   @default(1) // unidades de venta que salen de ese cajón/paquete
+  price        Float @default(0) // precio de venta (por unidad)
   stock      Int                @default(0)
   minStock   Int                @default(0) // umbral para alertas de reposición
   unit       String             @default("unidad") // unidad, pack, litro, etc.

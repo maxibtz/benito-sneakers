@@ -44,6 +44,8 @@ export type CantinaProductRow = {
   supplierId: string | null;
   supplierName: string | null;
   cost: number;
+  caseCost: number;
+  unitsPerCase: number;
   price: number;
   stock: number;
   minStock: number;
@@ -62,6 +64,8 @@ function toProductRow(p: {
   supplierId: string | null;
   supplier: { name: string } | null;
   cost: number;
+  caseCost: number;
+  unitsPerCase: number;
   price: number;
   stock: number;
   minStock: number;
@@ -78,6 +82,8 @@ function toProductRow(p: {
     supplierId: p.supplierId,
     supplierName: p.supplier?.name ?? null,
     cost: p.cost,
+    caseCost: p.caseCost,
+    unitsPerCase: p.unitsPerCase,
     price: p.price,
     stock: p.stock,
     minStock: p.minStock,
