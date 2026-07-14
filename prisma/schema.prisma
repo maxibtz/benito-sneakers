@@ -255,6 +255,112 @@ model OrderItem {
   unitPrice Float
 }
 
+// ============================================================================
+// CANTINA — módulo independiente (cancha de fútbol 5): bebidas y snacks.
+// Convive en el mismo proyecto/deploy, sin relación con el catálogo de zapatillas.
+// ============================================================================
+
+enum CantinaProductType {
+  SIMPLE // producto que se vende y descuenta stock propio
+  RECIPE // futuro: se arma con CantinaRecipeLine y descuenta stock de ingredientes
+}
+
+enum CantinaPaymentMethod {
+  EFECTIVO
+  TRANSFERENCIA
+  TARJETA
+}
+
+model CantinaSupplier {
+  id        String   @id @default(cuid())
+  name      String
+  contact   String   @default("")
+  notes     String   @default("")
+  createdAt DateTime @default(now())
+
+  products    CantinaProduct[]
+  ingredients CantinaIngredient[]
+}
+
+model CantinaCategory {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  products CantinaProduct[]
+}
+
+model CantinaProduct {
+  id         String             @id @default(cuid())
+  name       String
+  type       CantinaProductType @default(SIMPLE)
+  category   CantinaCategory?   @relation(fields: [categoryId], references: [id])
+  categoryId String?
+  supplier   CantinaSupplier?   @relation(fields: [supplierId], references: [id])
+  supplierId String?
+  cost       Float              @default(0) // costo de adquisición
+  price      Float              @default(0) // precio de venta
+  stock      Int                @default(0)
+  minStock   Int                @default(0) // umbral para alertas de reposición
+  unit       String             @default("unidad") // unidad, pack, litro, etc.
+  active     Boolean            @default(true)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  recipeLines CantinaRecipeLine[]
+  saleItems   CantinaSaleItem[]
+}
+
+// Sin UI todavía: deja la estructura lista para productos tipo "receta"
+// (ej. hamburguesas) que descuentan stock de ingredientes en vez de propio.
+model CantinaIngredient {
+  id         String   @id @default(cuid())
+  name       String
+  supplier   CantinaSupplier? @relation(fields: [supplierId], references: [id])
+  supplierId String?
+  cost       Float    @default(0) // costo unitario
+  stock      Float    @default(0)
+  minStock   Float    @default(0)
+  unit       String   @default("unidad")
+  createdAt  DateTime @default(now())
+
+  recipeLines CantinaRecipeLine[]
+}
+
+// Bill of materials: cuánto de cada ingrediente lleva una unidad del producto.
+model CantinaRecipeLine {
+  id           String            @id @default(cuid())
+  product      CantinaProduct    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId    String
+  ingredient   CantinaIngredient @relation(fields: [ingredientId], references: [id])
+  ingredientId String
+  quantity     Float // cantidad de ingrediente necesaria por unidad vendida
+
+  @@unique([productId, ingredientId])
+}
+
+// Ticket de venta: una fila por venta, con líneas de detalle.
+model CantinaSale {
+  id            String               @id @default(cuid())
+  soldAt        DateTime             @default(now())
+  paymentMethod CantinaPaymentMethod
+  total         Float                @default(0)
+  createdAt     DateTime             @default(now())
+
+  items CantinaSaleItem[]
+}
+
+model CantinaSaleItem {
+  id         String         @id @default(cuid())
+  sale       CantinaSale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  saleId     String
+  product    CantinaProduct @relation(fields: [productId], references: [id])
+  productId  String
+  quantity   Int
+  unitPrice  Float // precio al momento de la venta (snapshot, no depende del precio actual)
+  stockTaken Int    @default(0) // unidades realmente descontadas del stock (para devolverlas si se borra la venta)
+}
+
 // Ventas cargadas a mano por el admin (en persona, WhatsApp, mayorista, etc.).
 // Se suman a los ingresos y la ganancia del dashboard.
 model ManualSale {

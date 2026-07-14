@@ -42,6 +42,12 @@
   --color-skyblue: #7fc4ff;
   --color-brand-white: #ffffff;
   --color-brand-black: #0a0a0a;
+
+  /* Acento Cantina (naranja cálido) — diferencia visualmente ese módulo del
+     lila de Zapatillas, usando el mismo sistema de tarjetas/tablas del panel. */
+  --color-cantina: #ff9f43;
+  --color-cantina-light: #ffe3c2;
+  --color-cantina-vivid: #ff7a1a;
 }
 
 /* Store backdrop — radial gradient (glow tinted by the chosen accent) that the

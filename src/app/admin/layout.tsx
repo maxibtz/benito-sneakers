@@ -3,19 +3,36 @@ import Image from "next/image";
 import { logoutAction } from "@/actions/auth";
 import { ThemeScript } from "@/components/theme/ThemeScript";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
-import { AdminMobileNav } from "@/components/admin/AdminMobileNav";
+import { AdminMobileNav, type NavGroup } from "@/components/admin/AdminMobileNav";
 import { ADMIN_THEME_KEY } from "@/lib/theme";
 
-const NAV_ITEMS = [
-  { href: "/admin", label: "Dashboard" },
-  { href: "/admin/productos", label: "Productos" },
-  { href: "/admin/secciones", label: "Secciones" },
-  { href: "/admin/pedidos", label: "Pedidos" },
-  { href: "/admin/ventas", label: "Ventas manuales" },
-  { href: "/admin/clientes", label: "Clientes" },
-  { href: "/admin/cupones", label: "Cupones" },
-  { href: "/admin/contenido", label: "Contenido home" },
-  { href: "/admin/ajustes", label: "Ajustes" },
+const NAV_GROUPS: NavGroup[] = [
+  {
+    label: "Zapatillas",
+    items: [
+      { href: "/admin", label: "Dashboard" },
+      { href: "/admin/productos", label: "Productos" },
+      { href: "/admin/secciones", label: "Secciones" },
+      { href: "/admin/pedidos", label: "Pedidos" },
+      { href: "/admin/ventas", label: "Ventas manuales" },
+      { href: "/admin/clientes", label: "Clientes" },
+      { href: "/admin/cupones", label: "Cupones" },
+      { href: "/admin/contenido", label: "Contenido home" },
+      { href: "/admin/ajustes", label: "Ajustes" },
+    ],
+  },
+  {
+    label: "Cantina",
+    icon: "🍔",
+    accent: "cantina",
+    items: [
+      { href: "/admin/cantina", label: "Dashboard" },
+      { href: "/admin/cantina/productos", label: "Productos" },
+      { href: "/admin/cantina/proveedores", label: "Proveedores" },
+      { href: "/admin/cantina/vender", label: "Cargar venta" },
+      { href: "/admin/cantina/ventas", label: "Historial de ventas" },
+    ],
+  },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -35,7 +52,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             className="h-9 w-auto"
           />
         </Link>
-        <AdminMobileNav items={NAV_ITEMS} />
+        <AdminMobileNav groups={NAV_GROUPS} />
       </header>
 
       <div className="flex min-h-screen bg-[#f4f3fb] dark:bg-[#0b0d1a]">
@@ -62,15 +79,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               🛍️ Ver tienda
             </a>
           </div>
-          <nav className="flex flex-1 flex-col gap-1 px-3">
-            {NAV_ITEMS.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="rounded-md px-3 py-2 text-sm font-medium text-white/90 transition hover:bg-[var(--color-navy-light)]"
-              >
-                {item.label}
-              </Link>
+          <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3">
+            {NAV_GROUPS.map((group) => (
+              <div key={group.label} className="mb-2">
+                <p className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-widest text-white/40">
+                  {group.icon ? `${group.icon} ` : ""}
+                  {group.label}
+                </p>
+                {group.items.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`block rounded-md px-3 py-2 text-sm font-medium text-white/90 transition ${
+                      group.accent === "cantina"
+                        ? "hover:bg-[var(--color-cantina-vivid)]/20 hover:text-[var(--color-cantina-light)]"
+                        : "hover:bg-[var(--color-navy-light)]"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
             ))}
           </nav>
           <div className="flex items-center justify-between gap-2 px-6 py-3">
