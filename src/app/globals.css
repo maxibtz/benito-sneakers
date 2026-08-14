@@ -260,6 +260,27 @@ textarea:focus-visible {
   animation: cart-bump 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
+/* Etiqueta de envío: al imprimir, solo se ve la etiqueta, no el resto del panel. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-label,
+  .print-label * {
+    visibility: visible;
+  }
+  .print-label {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    border: none !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee,
   .animate-fade-up,

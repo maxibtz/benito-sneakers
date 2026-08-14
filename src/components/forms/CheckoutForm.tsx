@@ -210,7 +210,17 @@ export function CheckoutForm({
       clearCart();
       router.push(`/pedido-confirmado/${order.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No pudimos procesar el pedido.");
+      if (err instanceof TypeError) {
+        // Falla de red al enviar el pedido (no un error de negocio nuestro).
+        // No sabemos con certeza si llegó a guardarse del otro lado, así que
+        // evitamos que reintente a ciegas y pueda duplicar el pedido.
+        setError(
+          "Se cortó la conexión al confirmar tu pedido. Antes de volver a intentar, " +
+            "escribinos por WhatsApp para confirmar si ya quedó registrado."
+        );
+      } else {
+        setError(err instanceof Error ? err.message : "No pudimos procesar el pedido. Probá de nuevo.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -376,11 +386,6 @@ export function CheckoutForm({
             {effectiveMethod === "pickup" && shipping.pickupNote && (
               <p className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-xs text-[var(--color-store-muted)]">
                 {shipping.pickupNote}
-              </p>
-            )}
-            {effectiveMethod === "delivery" && shipping.freeThreshold > 0 && !freeByThreshold && (
-              <p className="text-xs text-[var(--color-store-muted)]">
-                ¡Envío gratis en compras desde {formatARS(shipping.freeThreshold)}!
               </p>
             )}
           </div>

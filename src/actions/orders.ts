@@ -311,6 +311,8 @@ export async function createOrderAction(input: CreateOrderInput) {
     id: order.id,
     customerName: order.customerName,
     phone: order.phone,
+    city: order.city,
+    province: order.province,
     total: order.total,
     itemsSummary,
   });

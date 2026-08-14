@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
-import { getOrder } from "@/lib/dal";
+import { getOrder, getShippingConfig } from "@/lib/dal";
 import { deleteOrderAction, confirmPaymentReceivedAction } from "@/actions/orders";
 import { refreshOrderPaymentAction, syncMpPaymentByOrder } from "@/actions/mercadopago";
 import { OrderStatusButton } from "@/components/forms/OrderStatusButton";
 import { TrackingForm } from "@/components/forms/TrackingForm";
+import { OrderShippingLabel } from "@/components/admin/OrderShippingLabel";
 
 function formatARS(value: number) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(value);
@@ -43,6 +44,10 @@ export default async function OrderDetailPage({
     }
   }
 
+  const shippingConfig = await getShippingConfig();
+  const itemsCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
+  const weightKg = itemsCount * shippingConfig.packageWeight;
+
   return (
     <div className="flex max-w-3xl flex-col gap-6">
       <div>
@@ -75,6 +80,24 @@ export default async function OrderDetailPage({
           </p>
         </div>
       </div>
+
+      {order.shippingMethod !== "pickup" && (
+        <OrderShippingLabel
+          orderId={order.id}
+          customerName={order.customerName}
+          dni={order.dni}
+          phone={order.phone}
+          street={order.street}
+          streetNumber={order.streetNumber}
+          floorApt={order.floorApt}
+          city={order.city}
+          province={order.province}
+          postalCode={order.postalCode}
+          itemsCount={itemsCount}
+          weightKg={weightKg}
+          declaredValue={formatARS(order.total)}
+        />
+      )}
 
       <div className="rounded-xl bg-white p-6 shadow-sm dark:bg-[#151833] dark:shadow-none">
         <h2 className="mb-4 font-semibold text-[var(--color-navy)] dark:text-white">Productos</h2>

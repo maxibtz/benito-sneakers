@@ -128,9 +128,9 @@ export default async function OrderConfirmedPage({
               ✅ Ya transferí — enviar comprobante
             </a>
           )}
-          <p className="mt-3 text-center text-xs text-[var(--color-store-muted)]">
-            Tu pedido queda reservado. Apenas confirmemos el pago te llega un email y preparamos
-            el envío.
+          <p className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-center text-xs text-amber-200">
+            ⚠️ Si no nos mandás el comprobante, <strong>no despachamos tu pedido</strong>. Apenas
+            lo recibamos te confirmamos por email y preparamos el envío.
           </p>
         </div>
       )}
