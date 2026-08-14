@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import { sendMail, emailLayout, button, getAppUrl } from "@/lib/mailer";
 
 type NewOrderInfo = {
   id: string;
@@ -16,50 +16,58 @@ export async function notifyNewOrder(order: NewOrderInfo) {
   await Promise.allSettled([notifyByEmail(order), notifyByWhatsapp(order)]);
 }
 
+/** Aviso por mail — reutiliza el mismo Gmail que ya manda los mails a clientes. */
 async function notifyByEmail(order: NewOrderInfo) {
-  const to = process.env.NOTIFY_EMAIL_TO;
-  const smtpHost = process.env.SMTP_HOST;
-  if (!to || !smtpHost) {
-    console.log("[notify] Email no configurado, se omite el envío.", order.id);
+  const to = process.env.NOTIFY_EMAIL_TO?.trim();
+  if (!to) {
+    console.log("[notify] NOTIFY_EMAIL_TO no configurado, se omite el aviso por mail.");
     return;
   }
 
-  const transporter = nodemailer.createTransport({
-    host: smtpHost,
-    port: Number(process.env.SMTP_PORT ?? 587),
-    secure: process.env.SMTP_SECURE === "true",
-    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-  });
+  const itemsHtml = order.itemsSummary
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => `<p style="margin:2px 0;">${line}</p>`)
+    .join("");
 
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM ?? process.env.SMTP_USER,
-    to,
-    subject: `Nuevo pedido de ${order.customerName} — ${formatARS(order.total)}`,
-    text: `Pedido #${order.id}\nCliente: ${order.customerName}\nTeléfono: ${order.phone}\nTotal: ${formatARS(
-      order.total
-    )}\n\n${order.itemsSummary}`,
-  });
+  const html = emailLayout(
+    "🛒 Nuevo pedido",
+    `
+      <p style="margin:0 0 4px;"><strong>${order.customerName}</strong> — ${formatARS(order.total)}</p>
+      <p style="margin:0 0 16px;color:#9aa1c4;">Tel: ${order.phone}</p>
+      ${itemsHtml}
+      <div style="margin-top:20px;">
+        ${button(`${getAppUrl()}/admin/pedidos/${order.id}`, "Ver pedido")}
+      </div>
+    `
+  );
+
+  const sent = await sendMail({ to, subject: `🛒 Nuevo pedido — ${formatARS(order.total)}`, html });
+  if (!sent) console.error("[notify] no se pudo enviar el mail de aviso de pedido", order.id);
 }
 
+/**
+ * Aviso por WhatsApp vía CallMeBot (servicio gratuito no oficial, pensado
+ * para mandarte avisos a tu propio número). Doc: https://www.callmebot.com/blog/free-api-whatsapp-messages/
+ * Variables: CALLMEBOT_PHONE (con código de país, sin +) y CALLMEBOT_APIKEY.
+ */
 async function notifyByWhatsapp(order: NewOrderInfo) {
-  const webhookUrl = process.env.WHATSAPP_WEBHOOK_URL;
-  const to = process.env.NOTIFY_WHATSAPP_TO;
-  if (!webhookUrl || !to) {
-    console.log("[notify] WhatsApp no configurado, se omite el envío.", order.id);
+  const phone = process.env.CALLMEBOT_PHONE?.trim();
+  const apikey = process.env.CALLMEBOT_APIKEY?.trim();
+  if (!phone || !apikey) {
+    console.log("[notify] CallMeBot no configurado, se omite el aviso por WhatsApp.");
     return;
   }
 
-  const message = `🛒 Nuevo pedido de ${order.customerName}\nTel: ${order.phone}\nTotal: ${formatARS(
-    order.total
-  )}\n${order.itemsSummary}`;
+  const text = `🛒 Nuevo pedido\n${order.customerName} — ${formatARS(order.total)}\nTel: ${order.phone}\n\n${order.itemsSummary}`;
+  const url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(text)}&apikey=${encodeURIComponent(apikey)}`;
 
   try {
-    await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ to, message }),
-    });
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) {
+      console.error("[notify] CallMeBot respondió con error", res.status, await res.text().catch(() => ""));
+    }
   } catch (err) {
-    console.error("[notify] Error enviando WhatsApp", err);
+    console.error("[notify] error enviando WhatsApp vía CallMeBot", err);
   }
 }
