@@ -48,6 +48,7 @@ export function CheckoutForm({
   const [error, setError] = useState<string | null>(null);
 
   const [province, setProvince] = useState("");
+  const [city, setCity] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [shippingMethod, setShippingMethod] = useState<ShippingMethod>("delivery");
 
@@ -83,10 +84,18 @@ export function CheckoutForm({
   else shippingCost = tableCost;
   const finalTotal = afterDiscount + shippingCost;
 
-  // Cotiza con Zipnova cuando hay un CP válido (4 dígitos). Con debounce.
+  // Cotiza con Zipnova cuando hay CP + ciudad + provincia (Zipnova los necesita
+  // los tres para resolver el destino). Con debounce.
   useEffect(() => {
     const zip = postalCode.trim();
-    if (!zipnovaAvailable || effectiveMethod === "pickup" || !/^[A-Za-z]?\d{4}/.test(zip)) {
+    const cityTrim = city.trim();
+    if (
+      !zipnovaAvailable ||
+      effectiveMethod === "pickup" ||
+      !/^[A-Za-z]?\d{4}/.test(zip) ||
+      !cityTrim ||
+      !province
+    ) {
       setQuoteOptions([]);
       setSelectedService("");
       setQuoteError(null);
@@ -100,7 +109,13 @@ export function CheckoutForm({
         const res = await fetch("/api/envio", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ zipcode: zip, quantity: totalQty, declaredValue: afterDiscount }),
+          body: JSON.stringify({
+            zipcode: zip,
+            city: cityTrim,
+            province,
+            quantity: totalQty,
+            declaredValue: afterDiscount,
+          }),
         });
         const data = await res.json();
         if (cancelled) return;
@@ -136,7 +151,7 @@ export function CheckoutForm({
       clearTimeout(t);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [postalCode, effectiveMethod, totalQty]);
+  }, [postalCode, city, province, effectiveMethod, totalQty]);
 
   async function applyCoupon() {
     setCouponMsg(null);
@@ -221,7 +236,7 @@ export function CheckoutForm({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <Input label="Ciudad" name="city" required />
+        <Input label="Ciudad" name="city" required value={city} onChange={setCity} />
         <div className="flex flex-col gap-1">
           <label htmlFor="province" className="text-sm text-[var(--color-store-muted)]">
             Provincia
@@ -493,12 +508,16 @@ function Input({
   required,
   type = "text",
   defaultValue,
+  value,
+  onChange,
 }: {
   label: string;
   name: string;
   required?: boolean;
   type?: string;
   defaultValue?: string;
+  value?: string;
+  onChange?: (value: string) => void;
 }) {
   return (
     <div className="flex flex-col gap-1">
@@ -510,7 +529,9 @@ function Input({
         name={name}
         type={type}
         required={required}
-        defaultValue={defaultValue}
+        {...(onChange
+          ? { value: value ?? "", onChange: (e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value) }
+          : { defaultValue })}
         className="rounded-xl border border-white/15 bg-white/5 px-3.5 py-2.5 text-white outline-none transition-colors focus:border-white"
       />
     </div>

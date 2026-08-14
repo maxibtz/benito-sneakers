@@ -4,7 +4,7 @@ import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 /**
  * Cotiza el envío por código postal con Zipnova.
- * Body: { zipcode: string, quantity?: number, declaredValue?: number }
+ * Body: { zipcode: string, city: string, province: string, quantity?: number, declaredValue?: number }
  * Respuesta:
  *   { ok:true, options:[...] }
  *   { ok:false, configured:false }  -> el checkout usa la tabla por provincia
@@ -30,6 +30,8 @@ export async function POST(request: Request) {
 
     const body = await request.json().catch(() => null);
     const zipcode = String(body?.zipcode ?? "").trim();
+    const city = String(body?.city ?? "").trim();
+    const province = String(body?.province ?? "").trim();
     const quantity = Math.max(1, Math.floor(Number(body?.quantity)) || 1);
     const declaredValue = Math.max(0, Number(body?.declaredValue) || 0);
 
@@ -39,11 +41,17 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+    if (!city || !province) {
+      return NextResponse.json(
+        { ok: false, error: "Completá ciudad y provincia para cotizar.", configured: true },
+        { status: 400 }
+      );
+    }
 
-    const result = await quoteZipnova({ zipcode, quantity, declaredValue });
+    const result = await quoteZipnova({ zipcode, city, province, quantity, declaredValue });
     if (!result.ok) {
-      // 400 para CP inválido; 502 si es un problema del proveedor.
-      const status = result.error.includes("código postal") ? 400 : 502;
+      // 400 para CP/ciudad inválidos; 502 si es un problema del proveedor.
+      const status = result.error.includes("código postal") || result.error.includes("ciudad") ? 400 : 502;
       return NextResponse.json(result, { status });
     }
     return NextResponse.json(result);

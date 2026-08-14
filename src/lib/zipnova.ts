@@ -73,6 +73,8 @@ function packageItem(quantity: number) {
  */
 export async function quoteZipnova(params: {
   zipcode: string;
+  city: string;
+  province: string;
   quantity: number;
   declaredValue: number;
 }): Promise<ZipnovaQuoteResult> {
@@ -84,13 +86,20 @@ export async function quoteZipnova(params: {
   if (!zip) {
     return { ok: false, error: "El código postal no es válido.", configured: true };
   }
+  const city = params.city.trim();
+  const province = params.province.trim();
+  if (!city || !province) {
+    // La API de Zipnova necesita ciudad + provincia además del CP para
+    // resolver el destino (no alcanza con mandar solo el código postal).
+    return { ok: false, error: "Completá ciudad y provincia para cotizar.", configured: true };
+  }
 
   const base = (process.env.ZIPNOVA_BASE_URL ?? DEFAULT_BASE).replace(/\/$/, "");
   const body = {
     account_id: Number(process.env.ZIPNOVA_ACCOUNT_ID),
     origin_id: Number(process.env.ZIPNOVA_ORIGIN_ID),
     declared_value: Math.max(0, Math.round(params.declaredValue) || 0),
-    destination: { zipcode: zip },
+    destination: { city, state: province, zipcode: zip },
     items: packageItem(params.quantity),
     type_packaging: "dynamic",
     sort_by: "price",

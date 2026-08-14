@@ -240,6 +240,8 @@ export async function createOrderAction(input: CreateOrderInput) {
     // (así el cliente no puede falsear el costo). Si falla, caemos a la tabla.
     const q = await quoteZipnova({
       zipcode: input.postalCode,
+      city: input.city,
+      province: input.province,
       quantity: totalQty,
       declaredValue: afterDiscount,
     });
