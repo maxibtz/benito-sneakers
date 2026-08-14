@@ -307,7 +307,10 @@ export async function createOrderAction(input: CreateOrderInput) {
     .map((item) => `- ${item.product.brand} ${item.product.model} x${item.quantity}`)
     .join("\n");
 
-  await notifyNewOrder({
+  // El pedido YA está guardado; avisar por mail/WhatsApp es un efecto
+  // secundario. No lo esperamos: si Gmail tarda o se cuelga, no puede dejar
+  // al cliente mirando "Procesando..." con la compra ya hecha.
+  notifyNewOrder({
     id: order.id,
     customerName: order.customerName,
     phone: order.phone,
@@ -315,7 +318,7 @@ export async function createOrderAction(input: CreateOrderInput) {
     province: order.province,
     total: order.total,
     itemsSummary,
-  });
+  }).catch((err) => console.error("[orders] error al notificar el pedido:", err));
 
   revalidatePath("/admin/pedidos");
   return order;

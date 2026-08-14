@@ -43,6 +43,11 @@ export async function sendMail(opts: {
     const transport = nodemailer.createTransport({
       service: "gmail",
       auth: { user: config.user, pass: config.pass },
+      // Sin esto, una conexión SMTP colgada (frecuente en algunos hostings)
+      // puede quedar esperando varios minutos y bloquear a quien la espere.
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 10_000,
     });
     await transport.sendMail({
       from: `"${config.fromName}" <${config.user}>`,
