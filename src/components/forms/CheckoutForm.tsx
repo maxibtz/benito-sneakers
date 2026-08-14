@@ -183,7 +183,7 @@ export function CheckoutForm({
 
     const formData = new FormData(e.currentTarget);
     try {
-      const order = await createOrderAction({
+      const result = await createOrderAction({
         customerId,
         customerName: String(formData.get("customerName")),
         email: String(formData.get("email")),
@@ -207,20 +207,23 @@ export function CheckoutForm({
         })),
       });
 
-      clearCart();
-      router.push(`/pedido-confirmado/${order.id}`);
-    } catch (err) {
-      if (err instanceof TypeError) {
-        // Falla de red al enviar el pedido (no un error de negocio nuestro).
-        // No sabemos con certeza si llegó a guardarse del otro lado, así que
-        // evitamos que reintente a ciegas y pueda duplicar el pedido.
-        setError(
-          "Se cortó la conexión al confirmar tu pedido. Antes de volver a intentar, " +
-            "escribinos por WhatsApp para confirmar si ya quedó registrado."
-        );
-      } else {
-        setError(err instanceof Error ? err.message : "No pudimos procesar el pedido. Probá de nuevo.");
+      if (!result.ok) {
+        // Error de negocio (sin stock, cupón vencido, etc.) — el pedido NO se creó.
+        setError(result.error);
+        return;
       }
+
+      clearCart();
+      router.push(`/pedido-confirmado/${result.order.id}`);
+    } catch {
+      // Acá solo llega un fallo de red real (la acción de servidor nunca
+      // tira errores de negocio, los devuelve como dato). No sabemos con
+      // certeza si el pedido llegó a guardarse del otro lado, así que
+      // evitamos que reintente a ciegas y pueda duplicarlo.
+      setError(
+        "Se cortó la conexión al confirmar tu pedido. Antes de volver a intentar, " +
+          "escribinos por WhatsApp para confirmar si ya quedó registrado."
+      );
     } finally {
       setSubmitting(false);
     }

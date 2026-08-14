@@ -173,7 +173,27 @@ export type CreateOrderInput = {
   items: { productId: string; variantId: string; quantity: number; unitPrice: number }[];
 };
 
-export async function createOrderAction(input: CreateOrderInput) {
+export type CreateOrderResult =
+  | { ok: true; order: Awaited<ReturnType<typeof createOrderInternal>> }
+  | { ok: false; error: string };
+
+/**
+ * Server Actions en Next.js: un `throw` dentro de una acción se oculta en
+ * producción (queda un mensaje genérico sin detalle, por seguridad). Por eso
+ * esta acción NUNCA tira errores de validación — los devuelve como dato
+ * ({ ok:false, error }), que es el patrón que Next.js recomienda para
+ * "errores esperados". Solo un fallo de red real llega al catch del cliente.
+ */
+export async function createOrderAction(input: CreateOrderInput): Promise<CreateOrderResult> {
+  try {
+    const order = await createOrderInternal(input);
+    return { ok: true, order };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "No pudimos procesar el pedido." };
+  }
+}
+
+async function createOrderInternal(input: CreateOrderInput) {
   // El cliente debe estar logueado; tomamos su id de la sesión (no del cliente).
   const session = await getCustomerSession();
   if (!session) {
