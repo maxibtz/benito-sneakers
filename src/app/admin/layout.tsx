@@ -21,18 +21,6 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/admin/ajustes", label: "Ajustes" },
     ],
   },
-  {
-    label: "Cantina",
-    icon: "🍔",
-    accent: "cantina",
-    items: [
-      { href: "/admin/cantina", label: "Dashboard" },
-      { href: "/admin/cantina/productos", label: "Productos" },
-      { href: "/admin/cantina/proveedores", label: "Proveedores" },
-      { href: "/admin/cantina/vender", label: "Cargar venta" },
-      { href: "/admin/cantina/ventas", label: "Historial de ventas" },
-    ],
-  },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -90,11 +78,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`block rounded-md px-3 py-2 text-sm font-medium text-white/90 transition ${
-                      group.accent === "cantina"
-                        ? "hover:bg-[var(--color-cantina-vivid)]/20 hover:text-[var(--color-cantina-light)]"
-                        : "hover:bg-[var(--color-navy-light)]"
-                    }`}
+                    className="block rounded-md px-3 py-2 text-sm font-medium text-white/90 transition hover:bg-[var(--color-navy-light)]"
                   >
                     {item.label}
                   </Link>

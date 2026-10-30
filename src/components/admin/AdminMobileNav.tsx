@@ -8,7 +8,7 @@ import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { ADMIN_THEME_KEY } from "@/lib/theme";
 
 type NavItem = { href: string; label: string };
-export type NavGroup = { label: string; icon?: string; accent?: "cantina"; items: NavItem[] };
+export type NavGroup = { label: string; icon?: string; items: NavItem[] };
 
 /** Menú del panel para celular: botón hamburguesa + panel desplegable, agrupado por sección. */
 export function AdminMobileNav({ groups }: { groups: NavGroup[] }) {
@@ -45,21 +45,15 @@ export function AdminMobileNav({ groups }: { groups: NavGroup[] }) {
               </p>
               {group.items.map((item) => {
                 const active = pathname === item.href;
-                const activeCls =
-                  group.accent === "cantina"
-                    ? "bg-[var(--color-cantina-vivid)]/25 text-[var(--color-cantina-light)]"
-                    : "bg-[var(--color-navy-light)] text-white";
-                const hoverCls =
-                  group.accent === "cantina"
-                    ? "hover:bg-[var(--color-cantina-vivid)]/15"
-                    : "hover:bg-[var(--color-navy-light)]";
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
                     onClick={() => setOpen(false)}
                     className={`rounded-md px-3 py-2.5 text-sm font-medium transition ${
-                      active ? activeCls : `text-white/85 ${hoverCls}`
+                      active
+                        ? "bg-[var(--color-navy-light)] text-white"
+                        : "text-white/85 hover:bg-[var(--color-navy-light)]"
                     }`}
                   >
                     {item.label}
