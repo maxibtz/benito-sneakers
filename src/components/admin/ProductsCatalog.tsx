@@ -156,6 +156,11 @@ export function ProductsCatalog({
                   ) : (
                     formatARS(p.price)
                   )}
+                  {p.priceCurrency === "USD" && p.priceUsd != null && (
+                    <span className="block text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                      USD {p.priceUsd} · sigue la cotización
+                    </span>
+                  )}
                   {p.cost > 0 && (
                     <span className="block text-[11px] text-gray-400">costo {formatARS(p.cost)}</span>
                   )}

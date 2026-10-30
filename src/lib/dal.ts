@@ -235,6 +235,8 @@ export type ProductWithStats = {
   active: boolean;
   price: number;
   salePrice: number | null;
+  priceCurrency: string;
+  priceUsd: number | null;
   effectivePrice: number;
   cost: number;
   unitMargin: number | null;
@@ -287,6 +289,8 @@ export async function getProductsWithStats(): Promise<ProductWithStats[]> {
       active: p.active,
       price: p.price,
       salePrice: p.salePrice,
+      priceCurrency: p.priceCurrency,
+      priceUsd: p.priceUsd,
       effectivePrice,
       cost,
       unitMargin,

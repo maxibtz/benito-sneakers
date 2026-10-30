@@ -10,6 +10,11 @@ import {
 } from "@/components/forms/SettingsForms";
 import { WhatsAppPanel } from "@/components/WhatsAppPanel";
 import { getShippingConfig } from "@/lib/dal";
+import { refreshUsdRateAction } from "@/actions/settings";
+
+function formatARS(value: number) {
+  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(value);
+}
 
 function toLocalInput(date: Date | null): string {
   if (!date) return "";
@@ -108,6 +113,39 @@ export default async function AjustesPage() {
         connected={mpSource !== null}
         source={mpSource}
       />
+
+      <div className="rounded-xl bg-white p-6 shadow-sm dark:bg-[#151833] dark:shadow-none">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-[var(--color-navy)] dark:text-white">
+              Cotización del dólar
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Se usa para los productos cargados en USD (ej: perfumes) — el precio en pesos de
+              esos productos se recalcula solo todos los días con esta cotización. Referencia:
+              dólar cripto (USDT), la misma que usás para pagarle a tu proveedor.
+            </p>
+          </div>
+          <form action={refreshUsdRateAction}>
+            <button
+              type="submit"
+              className="shrink-0 rounded-md border border-[var(--color-navy)] px-3 py-1.5 text-xs font-medium text-[var(--color-navy)] hover:bg-[var(--color-lilac-light)] dark:border-[var(--color-lilac)] dark:text-[var(--color-lilac-light)] dark:hover:bg-[var(--color-lilac)]/10"
+            >
+              ↻ Actualizar ahora
+            </button>
+          </form>
+        </div>
+        <div className="mt-3 flex items-baseline gap-2">
+          <span className="text-2xl font-bold text-[var(--color-navy)] dark:text-white">
+            {settings.usdRate > 0 ? formatARS(settings.usdRate) : "—"}
+          </span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            {settings.usdRateUpdatedAt
+              ? `actualizada ${settings.usdRateUpdatedAt.toLocaleString("es-AR")}`
+              : "todavía sin actualizar"}
+          </span>
+        </div>
+      </div>
 
       <AppearanceForm
         defaults={{

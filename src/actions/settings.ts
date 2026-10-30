@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { saveBannerImage, saveProductImages, saveTestimonialMedia } from "@/lib/uploads";
+import { forceRefreshUsdRate } from "@/lib/usd-rate";
 
 export type SettingsState = { ok?: boolean; error?: string };
 
@@ -241,6 +242,15 @@ export async function updateEmailAction(
 
   revalidatePath("/admin/ajustes");
   return { ok: true };
+}
+
+/** Botón "Actualizar ahora" en Ajustes — fuerza la consulta de la cotización. */
+export async function refreshUsdRateAction() {
+  await requireAdmin();
+  await forceRefreshUsdRate();
+  revalidatePath("/admin/ajustes");
+  revalidatePath("/admin/productos");
+  revalidatePath("/", "layout");
 }
 
 export async function updateShippingAction(

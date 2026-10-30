@@ -34,8 +34,14 @@ model Product {
   section     Section?  @relation(fields: [sectionId], references: [id])
   sectionId   String?
   sku         String    @unique
-  price       Float // precio real / de lista
-  salePrice   Float? // precio promocional (si existe, se cobra este)
+  price       Float // precio real / de lista, SIEMPRE en ARS (lo que se cobra)
+  salePrice   Float? // precio promocional (si existe, se cobra este), SIEMPRE en ARS
+  // Si priceCurrency es "USD", price/salePrice se recalculan solos todos los
+  // días a partir de priceUsd/salePriceUsd y la cotización del dólar — ver
+  // src/lib/usd-rate.ts. Si es "ARS", price/salePrice son los que carga el admin.
+  priceCurrency String  @default("ARS")
+  priceUsd      Float?
+  salePriceUsd  Float?
   cost        Float?    @default(0) // costo total del producto (suma de costBreakdown)
   costBreakdown String  @default("[]") // [{name, amount}] ej: flete, pase, envío
   images      String // comma-separated URLs / filenames
@@ -124,6 +130,12 @@ model SiteSettings {
   pickupEnabled     Boolean @default(true)
   pickupProvince    String  @default("Formosa") // provincia habilitada para retiro
   pickupNote        String  @default("")
+
+  // Cotización del dólar para productos cargados en USD (ej: perfumes pagados
+  // con USDT). Se actualiza sola ~1 vez por día — ver src/lib/usd-rate.ts.
+  usdRate          Float     @default(0)
+  usdRateSource    String    @default("cripto") // referencia: USDT/ARS (Binance)
+  usdRateUpdatedAt DateTime?
 
   updatedAt     DateTime @updatedAt
 }

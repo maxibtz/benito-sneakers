@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getProduct, getSections } from "@/lib/dal";
 import { updateProductAction } from "@/actions/products";
 import { ProductForm } from "@/components/forms/ProductForm";
+import { getUsdRate } from "@/lib/usd-rate";
 
 function parseCostItems(
   raw: string,
@@ -29,7 +30,11 @@ export default async function EditProductPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [product, sections] = await Promise.all([getProduct(id), getSections()]);
+  const [product, sections, usd] = await Promise.all([
+    getProduct(id),
+    getSections(),
+    getUsdRate(),
+  ]);
   if (!product) notFound();
 
   const boundAction = updateProductAction.bind(null, id);
@@ -45,6 +50,8 @@ export default async function EditProductPage({
       <ProductForm
         action={boundAction}
         sections={sections.map((s) => ({ id: s.id, name: s.name }))}
+        usdRate={usd.rate}
+        usdRateUpdatedAt={usd.updatedAt ? usd.updatedAt.toLocaleString("es-AR") : null}
         submitLabel="Guardar cambios"
         defaultValues={{
           brand: product.brand,
@@ -54,6 +61,9 @@ export default async function EditProductPage({
           sku: product.sku,
           price: product.price,
           salePrice: product.salePrice,
+          priceCurrency: product.priceCurrency,
+          priceUsd: product.priceUsd,
+          salePriceUsd: product.salePriceUsd,
           costItems: parseCostItems(product.costBreakdown, product.cost),
           active: product.active,
           variants: product.variants.map((v) => ({ size: v.size, stock: v.stock })),

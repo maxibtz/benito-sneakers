@@ -1,9 +1,10 @@
 import { createProductAction } from "@/actions/products";
 import { ProductForm } from "@/components/forms/ProductForm";
 import { getSections } from "@/lib/dal";
+import { getUsdRate } from "@/lib/usd-rate";
 
 export default async function NewProductPage() {
-  const sections = await getSections();
+  const [sections, usd] = await Promise.all([getSections(), getUsdRate()]);
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -15,6 +16,8 @@ export default async function NewProductPage() {
       <ProductForm
         action={createProductAction}
         sections={sections.map((s) => ({ id: s.id, name: s.name }))}
+        usdRate={usd.rate}
+        usdRateUpdatedAt={usd.updatedAt ? usd.updatedAt.toLocaleString("es-AR") : null}
         submitLabel="Crear producto"
       />
     </div>

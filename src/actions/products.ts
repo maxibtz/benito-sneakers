@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { productSchema, parseVariants } from "@/lib/validation";
 import { saveProductImages, saveProductVideos } from "@/lib/uploads";
+import { getUsdRate, roundToStep } from "@/lib/usd-rate";
 
 export type EchoValues = {
   brand: string;
@@ -74,14 +75,17 @@ export async function createProductAction(
 ): Promise<ProductFormState> {
   await requireAdmin();
   const values = echoValues(formData);
+  const pricing = await resolvePricing(formData);
+  if ("error" in pricing) return { error: pricing.error, values };
+
   const parsed = productSchema.safeParse({
     brand: formData.get("brand"),
     model: formData.get("model"),
     description: formData.get("description"),
     category: formData.get("category") ?? undefined,
     sku: formData.get("sku"),
-    price: formData.get("price"),
-    salePrice: formData.get("salePrice"),
+    price: pricing.price,
+    salePrice: pricing.salePrice,
     cost: formData.get("cost"),
     active: formData.get("active") === "on",
   });
@@ -117,6 +121,9 @@ export async function createProductAction(
       salePrice,
       cost,
       costBreakdown: breakdown,
+      priceCurrency: pricing.priceCurrency,
+      priceUsd: pricing.priceUsd,
+      salePriceUsd: pricing.salePriceUsd,
       images: imagePaths.join(","),
       videos: videoPaths.join(","),
       variants: { create: variants },
@@ -135,14 +142,17 @@ export async function updateProductAction(
 ): Promise<ProductFormState> {
   await requireAdmin();
   const values = echoValues(formData);
+  const pricing = await resolvePricing(formData);
+  if ("error" in pricing) return { error: pricing.error, values };
+
   const parsed = productSchema.safeParse({
     brand: formData.get("brand"),
     model: formData.get("model"),
     description: formData.get("description"),
     category: formData.get("category") ?? undefined,
     sku: formData.get("sku"),
-    price: formData.get("price"),
-    salePrice: formData.get("salePrice"),
+    price: pricing.price,
+    salePrice: pricing.salePrice,
     cost: formData.get("cost"),
     active: formData.get("active") === "on",
   });
@@ -216,6 +226,9 @@ export async function updateProductAction(
           salePrice,
           cost,
           costBreakdown: breakdown,
+          priceCurrency: pricing.priceCurrency,
+          priceUsd: pricing.priceUsd,
+          salePriceUsd: pricing.salePriceUsd,
           images: allImages.join(","),
           videos: allVideos.join(","),
         },
@@ -258,6 +271,58 @@ async function resolveSection(
   const section = await db.section.findUnique({ where: { id: sectionId } });
   if (!section) return { sectionId: null, category: "" };
   return { sectionId: section.id, category: section.name };
+}
+
+type ResolvedPricing =
+  | { error: string }
+  | {
+      price: string; // string porque así los espera productSchema (z.coerce.number)
+      salePrice: string;
+      priceCurrency: "ARS" | "USD";
+      priceUsd: number | null;
+      salePriceUsd: number | null;
+    };
+
+/**
+ * Si el admin cargó el precio en USD, acá se convierte a ARS usando la
+ * cotización del momento (ver src/lib/usd-rate.ts) — el precio en pesos SIEMPRE
+ * es el que se cobra; priceUsd/salePriceUsd quedan guardados para que el
+ * recálculo diario automático los vuelva a convertir sin que el admin haga nada.
+ */
+async function resolvePricing(formData: FormData): Promise<ResolvedPricing> {
+  const currency = String(formData.get("priceCurrency") ?? "ARS") === "USD" ? "USD" : "ARS";
+
+  if (currency === "ARS") {
+    return {
+      price: String(formData.get("price") ?? ""),
+      salePrice: String(formData.get("salePrice") ?? ""),
+      priceCurrency: "ARS",
+      priceUsd: null,
+      salePriceUsd: null,
+    };
+  }
+
+  const priceUsd = Number(formData.get("priceUsd"));
+  if (!Number.isFinite(priceUsd) || priceUsd <= 0) {
+    return { error: "Ingresá el precio en dólares." };
+  }
+  const { rate } = await getUsdRate();
+  if (!rate || rate <= 0) {
+    return {
+      error:
+        "Todavía no pudimos obtener la cotización del dólar. Probá de nuevo en un momento, o cargá el precio en pesos.",
+    };
+  }
+  const salePriceUsdRaw = Number(formData.get("salePriceUsd"));
+  const salePriceUsd = Number.isFinite(salePriceUsdRaw) && salePriceUsdRaw > 0 ? salePriceUsdRaw : null;
+
+  return {
+    price: String(roundToStep(priceUsd * rate, 100)),
+    salePrice: salePriceUsd != null ? String(roundToStep(salePriceUsd * rate, 100)) : "",
+    priceCurrency: "USD",
+    priceUsd,
+    salePriceUsd,
+  };
 }
 
 function normalizeSalePrice(

@@ -7,6 +7,8 @@ import type { ProductFormState } from "@/actions/products";
 type ProductFormProps = {
   action: (state: ProductFormState, formData: FormData) => Promise<ProductFormState>;
   sections: { id: string; name: string }[];
+  usdRate: number;
+  usdRateUpdatedAt: string | null; // ya formateado en es-AR, o null si nunca se actualizó
   defaultValues?: {
     brand: string;
     model: string;
@@ -15,6 +17,9 @@ type ProductFormProps = {
     sku: string;
     price: number;
     salePrice: number | null;
+    priceCurrency: string;
+    priceUsd: number | null;
+    salePriceUsd: number | null;
     costItems: { name: string; amount: number }[];
     active: boolean;
     variants: { size: string; stock: number }[];
@@ -28,12 +33,28 @@ function formatARS(value: number) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(value);
 }
 
-export function ProductForm({ action, sections, defaultValues, submitLabel }: ProductFormProps) {
+export function ProductForm({
+  action,
+  sections,
+  usdRate,
+  usdRateUpdatedAt,
+  defaultValues,
+  submitLabel,
+}: ProductFormProps) {
   const [state, formAction, isPending] = useActionState(action, {});
 
+  const [currency, setCurrency] = useState<"ARS" | "USD">(
+    defaultValues?.priceCurrency === "USD" ? "USD" : "ARS"
+  );
   const [price, setPrice] = useState<string>(defaultValues?.price?.toString() ?? "");
   const [salePrice, setSalePrice] = useState<string>(
     defaultValues?.salePrice != null ? String(defaultValues.salePrice) : ""
+  );
+  const [priceUsd, setPriceUsd] = useState<string>(
+    defaultValues?.priceUsd != null ? String(defaultValues.priceUsd) : ""
+  );
+  const [salePriceUsd, setSalePriceUsd] = useState<string>(
+    defaultValues?.salePriceUsd != null ? String(defaultValues.salePriceUsd) : ""
   );
   const [costItems, setCostItems] = useState<{ name: string; amount: string }[]>(
     defaultValues && defaultValues.costItems.length > 0
@@ -79,8 +100,21 @@ export function ProductForm({ action, sections, defaultValues, submitLabel }: Pr
     setKeptImages((prev) => prev.filter((_, idx) => idx !== i));
   }
 
-  const priceN = Number(price) || 0;
-  const saleN = Number(salePrice) || 0;
+  function roundToStep(value: number, step: number): number {
+    return Math.round(value / step) * step;
+  }
+
+  const priceUsdN = Number(priceUsd) || 0;
+  const salePriceUsdN = Number(salePriceUsd) || 0;
+  // En modo USD, el precio en pesos real lo calcula el servidor al guardar
+  // (y se recalcula solo todos los días) — acá solo mostramos una vista previa.
+  const priceN = currency === "USD" ? roundToStep(priceUsdN * usdRate, 100) : Number(price) || 0;
+  const saleN =
+    currency === "USD"
+      ? salePriceUsdN > 0
+        ? roundToStep(salePriceUsdN * usdRate, 100)
+        : 0
+      : Number(salePrice) || 0;
   const costN = costItems.reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
 
   function updateCostItem(i: number, key: "name" | "amount", value: string) {
@@ -159,29 +193,106 @@ export function ProductForm({ action, sections, defaultValues, submitLabel }: Pr
         <Field label="SKU" name="sku" defaultValue={dvSku} required />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field
-          label="Precio real (ARS)"
-          name="price"
-          type="number"
-          step="0.01"
-          value={price}
-          onChange={setPrice}
-          required
-        />
-        <Field
-          label="Precio promocional (ARS)"
-          name="salePrice"
-          type="number"
-          step="0.01"
-          value={salePrice}
-          onChange={setSalePrice}
-        />
+      <input type="hidden" name="priceCurrency" value={currency} />
+
+      <div className="flex flex-col gap-2">
+        <span className="text-sm font-medium text-[var(--color-navy)] dark:text-gray-200">
+          Moneda del precio
+        </span>
+        <div className="flex w-fit overflow-hidden rounded-md border border-gray-300 dark:border-gray-600">
+          <button
+            type="button"
+            onClick={() => setCurrency("ARS")}
+            className={`px-4 py-2 text-sm font-medium transition ${
+              currency === "ARS"
+                ? "bg-[var(--color-navy)] text-white"
+                : "bg-white text-gray-600 hover:bg-gray-50 dark:bg-white/5 dark:text-gray-300"
+            }`}
+          >
+            Pesos (ARS)
+          </button>
+          <button
+            type="button"
+            onClick={() => setCurrency("USD")}
+            className={`px-4 py-2 text-sm font-medium transition ${
+              currency === "USD"
+                ? "bg-[var(--color-navy)] text-white"
+                : "bg-white text-gray-600 hover:bg-gray-50 dark:bg-white/5 dark:text-gray-300"
+            }`}
+          >
+            Dólares (USD)
+          </button>
+        </div>
       </div>
-      <p className="-mt-2 text-xs text-gray-500 dark:text-gray-400">
-        Si cargás un precio promocional menor al real, en la tienda se muestra el precio real
-        tachado y el promocional destacado.
-      </p>
+
+      {currency === "ARS" ? (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              label="Precio real (ARS)"
+              name="price"
+              type="number"
+              step="0.01"
+              value={price}
+              onChange={setPrice}
+              required
+            />
+            <Field
+              label="Precio promocional (ARS)"
+              name="salePrice"
+              type="number"
+              step="0.01"
+              value={salePrice}
+              onChange={setSalePrice}
+            />
+          </div>
+          <p className="-mt-2 text-xs text-gray-500 dark:text-gray-400">
+            Si cargás un precio promocional menor al real, en la tienda se muestra el precio real
+            tachado y el promocional destacado.
+          </p>
+        </>
+      ) : (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              label="Precio real (USD)"
+              name="priceUsd"
+              type="number"
+              step="0.01"
+              value={priceUsd}
+              onChange={setPriceUsd}
+              required
+            />
+            <Field
+              label="Precio promocional (USD, opcional)"
+              name="salePriceUsd"
+              type="number"
+              step="0.01"
+              value={salePriceUsd}
+              onChange={setSalePriceUsd}
+            />
+          </div>
+          <div className="-mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+            {usdRate > 0 ? (
+              <>
+                En la tienda se va a ver <strong>≈ {formatARS(priceN)}</strong>
+                {saleN > 0 && saleN < priceN ? (
+                  <>
+                    {" "}
+                    (promo <strong>≈ {formatARS(saleN)}</strong>)
+                  </>
+                ) : null}{" "}
+                — cotización dólar cripto {formatARS(usdRate)}
+                {usdRateUpdatedAt ? ` (actualizada ${usdRateUpdatedAt})` : ""}. Se recalcula sola
+                todos los días, así que el precio en pesos se va a ir ajustando sin que tengas que
+                volver a entrar acá.
+              </>
+            ) : (
+              "Todavía no tenemos una cotización guardada — se va a tomar apenas guardes este producto."
+            )}
+          </div>
+        </>
+      )}
 
       {/* Costos — lista desplegable */}
       <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-white/5">
