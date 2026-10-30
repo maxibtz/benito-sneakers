@@ -115,7 +115,10 @@ export function ProductForm({
         ? roundToStep(salePriceUsdN * usdRate, 100)
         : 0
       : Number(salePrice) || 0;
-  const costN = costItems.reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
+  const costNativeSum = costItems.reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
+  // Igual que el precio: si el producto está en USD, los costos también se
+  // cargan en USD y acá solo se muestra la vista previa en pesos.
+  const costN = currency === "USD" ? costNativeSum * usdRate : costNativeSum;
 
   function updateCostItem(i: number, key: "name" | "amount", value: string) {
     setCostItems((prev) => {
@@ -302,17 +305,24 @@ export function ProductForm({
         <div className="mb-2 flex items-center justify-between">
           <div>
             <p className="text-sm font-semibold text-[var(--color-navy)] dark:text-gray-200">
-              Costos
+              Costos {currency === "USD" ? "(USD)" : ""}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Sumá todos tus costos (compra, flete, pase, envío…). El total es el costo del producto.
+              {currency === "USD"
+                ? "Sumá todos tus costos en dólares (compra, flete, pase…). Se convierten a pesos con la cotización del día y se recalculan solos, igual que el precio."
+                : "Sumá todos tus costos (compra, flete, pase, envío…). El total es el costo del producto."}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-xs text-gray-500 dark:text-gray-400">Costo total</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Costo total {currency === "USD" ? "≈ (ARS)" : ""}
+            </p>
             <p className="text-lg font-bold text-[var(--color-navy)] dark:text-white">
               {formatARS(costN)}
             </p>
+            {currency === "USD" && (
+              <p className="text-xs text-gray-400">USD {costNativeSum.toFixed(2)}</p>
+            )}
           </div>
         </div>
 
@@ -330,7 +340,7 @@ export function ProductForm({
                 onChange={(e) => updateCostItem(i, "amount", e.target.value)}
                 type="number"
                 step="0.01"
-                placeholder="$"
+                placeholder={currency === "USD" ? "USD" : "$"}
                 className="w-32 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-[var(--color-navy)] dark:border-gray-600 dark:bg-white/5 dark:text-white"
               />
               <button

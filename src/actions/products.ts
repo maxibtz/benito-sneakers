@@ -106,7 +106,7 @@ export async function createProductAction(
 
   const { salePrice: rawSale, cost: _ignored, ...rest } = parsed.data;
   const salePrice = normalizeSalePrice(rawSale, parsed.data.price);
-  const { breakdown, cost } = parseCostBreakdown(formData.get("costBreakdown"));
+  const { breakdown, cost } = parseCostBreakdown(formData.get("costBreakdown"), pricing.priceCurrency, pricing.rate);
   const { sectionId, category } = await resolveSection(formData);
   const files = formData.getAll("images") as File[];
   const imagePaths = await saveProductImages(files, parsed.data.sku);
@@ -173,7 +173,7 @@ export async function updateProductAction(
 
   const { salePrice: rawSale, cost: _ignored, ...rest } = parsed.data;
   const salePrice = normalizeSalePrice(rawSale, parsed.data.price);
-  const { breakdown, cost } = parseCostBreakdown(formData.get("costBreakdown"));
+  const { breakdown, cost } = parseCostBreakdown(formData.get("costBreakdown"), pricing.priceCurrency, pricing.rate);
   const { sectionId, category } = await resolveSection(formData);
   const files = (formData.getAll("images") as File[]).filter((f) => f.size > 0);
   const newImagePaths = await saveProductImages(files, parsed.data.sku);
@@ -281,6 +281,7 @@ type ResolvedPricing =
       priceCurrency: "ARS" | "USD";
       priceUsd: number | null;
       salePriceUsd: number | null;
+      rate: number; // cotización usada (0 si es ARS, no hace falta) — se reusa para los costos
     };
 
 /**
@@ -299,6 +300,7 @@ async function resolvePricing(formData: FormData): Promise<ResolvedPricing> {
       priceCurrency: "ARS",
       priceUsd: null,
       salePriceUsd: null,
+      rate: 0,
     };
   }
 
@@ -322,6 +324,7 @@ async function resolvePricing(formData: FormData): Promise<ResolvedPricing> {
     priceCurrency: "USD",
     priceUsd,
     salePriceUsd,
+    rate,
   };
 }
 
@@ -334,10 +337,18 @@ function normalizeSalePrice(
   return salePrice;
 }
 
-function parseCostBreakdown(raw: FormDataEntryValue | null): {
-  breakdown: string;
-  cost: number;
-} {
+/**
+ * El breakdown se guarda SIEMPRE en la moneda nativa tal como la cargó el
+ * admin (USD si el producto está en dólares). `cost` (el campo numérico que
+ * usa el resto del panel para ganancia/margen) es SIEMPRE en ARS: si es un
+ * producto en USD, se convierte acá con la cotización del momento — y se
+ * vuelve a recalcular solo en el refresh diario (ver refreshUsdPricedProducts).
+ */
+function parseCostBreakdown(
+  raw: FormDataEntryValue | null,
+  currency: "ARS" | "USD",
+  rate: number
+): { breakdown: string; cost: number } {
   if (typeof raw !== "string") return { breakdown: "[]", cost: 0 };
   try {
     const parsed = JSON.parse(raw);
@@ -348,7 +359,8 @@ function parseCostBreakdown(raw: FormDataEntryValue | null): {
         amount: Number(it?.amount) || 0,
       }))
       .filter((it) => it.name.length > 0 || it.amount > 0);
-    const cost = clean.reduce((sum, it) => sum + (it.amount > 0 ? it.amount : 0), 0);
+    const nativeSum = clean.reduce((sum, it) => sum + (it.amount > 0 ? it.amount : 0), 0);
+    const cost = currency === "USD" ? nativeSum * rate : nativeSum;
     return { breakdown: JSON.stringify(clean), cost };
   } catch {
     return { breakdown: "[]", cost: 0 };

@@ -28,18 +28,35 @@ async function fetchCryptoRate(): Promise<number | null> {
   }
 }
 
-/** Recalcula price/salePrice (ARS) de todos los productos cargados en USD. */
+/** Suma los montos de un costBreakdown (JSON [{name, amount}]), cargados en USD. */
+function sumCostBreakdown(raw: string): number {
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return 0;
+    return parsed.reduce((sum, it) => sum + (Number(it?.amount) > 0 ? Number(it.amount) : 0), 0);
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Recalcula price/salePrice/cost (ARS) de todos los productos cargados en
+ * USD. El costo también sigue la cotización del día, para que el margen de
+ * ganancia que ve el admin no quede desactualizado apenas se mueve el dólar.
+ */
 export async function refreshUsdPricedProducts(rate: number) {
   const products = await db.product.findMany({
     where: { priceCurrency: "USD" },
-    select: { id: true, priceUsd: true, salePriceUsd: true },
+    select: { id: true, priceUsd: true, salePriceUsd: true, costBreakdown: true },
   });
   for (const p of products) {
     if (p.priceUsd == null || p.priceUsd <= 0) continue;
     const price = roundToStep(p.priceUsd * rate, 100);
     const salePrice =
       p.salePriceUsd != null && p.salePriceUsd > 0 ? roundToStep(p.salePriceUsd * rate, 100) : null;
-    await db.product.update({ where: { id: p.id }, data: { price, salePrice } });
+    const costUsd = sumCostBreakdown(p.costBreakdown);
+    const cost = costUsd * rate;
+    await db.product.update({ where: { id: p.id }, data: { price, salePrice, cost } });
   }
 }
 
