@@ -24,7 +24,7 @@ const PAYMENT_OPTIONS = [
 ] as const;
 
 type CheckoutFormProps = {
-  customerId: string;
+  customerId?: string | null;
   defaultName?: string;
   defaultEmail?: string;
   defaultPhone?: string;

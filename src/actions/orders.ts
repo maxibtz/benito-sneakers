@@ -11,7 +11,7 @@ import { getShippingConfig } from "@/lib/dal";
 import { computeShipping, canPickup, type ShippingMethod } from "@/lib/shipping";
 import { quoteZipnova, isZipnovaConfigured } from "@/lib/zipnova";
 import { sendTrackingEmail, sendPaymentReceivedEmail } from "@/lib/emails";
-import { rateLimit, waitText } from "@/lib/rate-limit";
+import { getClientIp, rateLimit, waitText } from "@/lib/rate-limit";
 import type { OrderStatus, PaymentMethod } from "@/generated/prisma/enums";
 
 export type TrackingState = { ok?: boolean; error?: string; sent?: boolean };
@@ -194,18 +194,25 @@ export async function createOrderAction(input: CreateOrderInput): Promise<Create
 }
 
 async function createOrderInternal(input: CreateOrderInput) {
-  // El cliente debe estar logueado; tomamos su id de la sesión (no del cliente).
+  // Se puede comprar con cuenta o como invitado. Si hay sesión, el pedido se
+  // asocia a la cuenta (el id sale de la sesión, nunca del navegador).
   const session = await getCustomerSession();
-  if (!session) {
-    throw new Error("Tenés que iniciar sesión para comprar.");
-  }
-  const customerId = session.customerId;
+  const customerId = session?.customerId ?? null;
 
-  // Anti-abuso: máx 5 pedidos cada 10 minutos por cuenta.
-  const rl = rateLimit(`order:${customerId}`, 5, 10 * 60 * 1000);
+  // Anti-abuso: máx 5 pedidos cada 10 minutos por cuenta (o por IP si es invitado).
+  const rlKey = customerId ? `order:${customerId}` : `order:ip:${await getClientIp()}`;
+  const rl = rateLimit(rlKey, 5, 10 * 60 * 1000);
   if (!rl.ok) {
     throw new Error(`Demasiados pedidos seguidos. Probá de nuevo en ${waitText(rl.retryAfterSec)}.`);
   }
+
+  // Datos de contacto: los validamos acá porque el invitado no tiene cuenta.
+  input.customerName = String(input.customerName ?? "").trim().slice(0, 120);
+  input.email = String(input.email ?? "").trim().toLowerCase().slice(0, 160);
+  input.phone = String(input.phone ?? "").trim().slice(0, 40);
+  if (input.customerName.length < 2) throw new Error("Escribí tu nombre completo.");
+  if (!/^[^s@]+@[^s@]+.[^s@]{2,}$/.test(input.email)) throw new Error("Revisá el email: parece incompleto.");
+  if (input.phone.replace(/D/g, "").length < 8) throw new Error("Revisá el teléfono: poné código de área y número.");
 
   if (!Array.isArray(input.items) || input.items.length === 0 || input.items.length > 50) {
     throw new Error("El carrito es inválido.");
