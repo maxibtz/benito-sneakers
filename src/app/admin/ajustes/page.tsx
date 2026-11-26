@@ -68,6 +68,7 @@ export default async function AjustesPage() {
           instagram: settings.instagram,
           tiktok: settings.tiktok,
           transferAlias: settings.transferAlias,
+          metaPixelId: settings.metaPixelId,
         }}
       />
 

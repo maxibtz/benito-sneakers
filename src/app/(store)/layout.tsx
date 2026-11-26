@@ -1,9 +1,10 @@
-import type { CSSProperties } from "react";
+import { Suspense, type CSSProperties } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { PromoModal } from "@/components/PromoModal";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
 import { getPromotion, getSiteSettings } from "@/lib/dal";
+import { MetaPixel } from "@/components/pixel/MetaPixel";
 
 const FONT_MAP: Record<string, string> = {
   moderna: "var(--font-display)",
@@ -29,6 +30,23 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       <Header />
       <main className="flex-1">{children}</main>
       <Footer />
+      {settings.metaPixelId && (
+        <>
+          <Suspense fallback={null}>
+            <MetaPixel pixelId={settings.metaPixelId} />
+          </Suspense>
+          <noscript>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              height="1"
+              width="1"
+              style={{ display: "none" }}
+              alt=""
+              src={`https://www.facebook.com/tr?id=${settings.metaPixelId}&ev=PageView&noscript=1`}
+            />
+          </noscript>
+        </>
+      )}
       <WhatsAppFloat number={settings.whatsapp} message={settings.whatsappMessage} />
       {promo?.enabled && (
         <PromoModal

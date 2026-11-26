@@ -18,11 +18,15 @@ export async function updateContactAction(
   const instagram = String(formData.get("instagram") ?? "").trim().replace(/^@/, "");
   const tiktok = String(formData.get("tiktok") ?? "").trim().replace(/^@/, "");
   const transferAlias = String(formData.get("transferAlias") ?? "").trim();
+  const metaPixelId = String(formData.get("metaPixelId") ?? "").replace(/D/g, "");
+  if (metaPixelId && (metaPixelId.length < 10 || metaPixelId.length > 20)) {
+    return { error: "El ID del Píxel de Meta tiene que ser un número de 15 o 16 dígitos." };
+  }
 
   await db.siteSettings.upsert({
     where: { id: "default" },
-    update: { whatsapp, whatsappMessage, instagram, tiktok, transferAlias },
-    create: { id: "default", whatsapp, whatsappMessage, instagram, tiktok, transferAlias },
+    update: { whatsapp, whatsappMessage, instagram, tiktok, transferAlias, metaPixelId },
+    create: { id: "default", whatsapp, whatsappMessage, instagram, tiktok, transferAlias, metaPixelId },
   });
 
   revalidatePath("/admin/ajustes");

@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { PIXEL_CURRENCY, trackPixel } from "@/lib/meta-pixel";
 
 export type CartItem = {
   productId: string;
@@ -48,6 +49,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [items, hydrated]);
 
   function addItem(newItem: CartItem) {
+    trackPixel("AddToCart", {
+      content_ids: [newItem.productId],
+      content_type: "product",
+      content_name: `${newItem.brand} ${newItem.model}`,
+      value: newItem.price * newItem.quantity,
+      currency: PIXEL_CURRENCY,
+    });
     setItems((prev) => {
       const existing = prev.find((i) => i.variantId === newItem.variantId);
       if (existing) {

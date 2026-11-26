@@ -30,6 +30,7 @@ export function ContactForm({
     instagram: string;
     tiktok: string;
     transferAlias: string;
+    metaPixelId: string;
   };
 }) {
   const [state, action, pending] = useActionState(updateContactAction, initial);
@@ -86,6 +87,22 @@ export function ContactForm({
             defaultValue={defaults.transferAlias}
             className={inputClass}
           />
+        </div>
+        <div className="flex flex-col gap-1 sm:col-span-2">
+          <label className={labelClass} htmlFor="metaPixelId">
+            ID del Píxel de Meta (anuncios de Facebook e Instagram)
+          </label>
+          <input
+            id="metaPixelId"
+            name="metaPixelId"
+            inputMode="numeric"
+            defaultValue={defaults.metaPixelId}
+            placeholder="Ej: 2294834671449082"
+            className={inputClass}
+          />
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            Mide visitas, productos vistos, carritos, inicios de compra y compras. Dejalo vacío para desactivarlo.
+          </span>
         </div>
       </div>
 

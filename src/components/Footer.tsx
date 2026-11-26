@@ -1,12 +1,14 @@
 import Link from "next/link";
 import Image from "next/image";
 import { getSiteSettings } from "@/lib/dal";
+import { waLink } from "@/lib/whatsapp";
 
 export async function Footer() {
   const settings = await getSiteSettings();
+  const whatsappHref = waLink(settings.whatsapp);
 
   const socials = [
-    settings.whatsapp ? { label: "WhatsApp", href: `https://wa.me/${settings.whatsapp}` } : null,
+    whatsappHref ? { label: "WhatsApp", href: whatsappHref } : null,
     settings.instagram
       ? { label: "Instagram", href: `https://instagram.com/${settings.instagram}` }
       : null,

@@ -4,6 +4,7 @@ import { getOrder, getSiteSettings } from "@/lib/dal";
 import { OrderTracker } from "@/components/OrderTracker";
 import { syncMpPayment } from "@/actions/mercadopago";
 import { waLink } from "@/lib/whatsapp";
+import { TrackPurchase } from "@/components/pixel/PixelEvents";
 
 function formatARS(value: number) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(value);
@@ -69,8 +70,22 @@ export default async function OrderConfirmedPage({
       `por mi pedido #${order.id.slice(-8)}. Te adjunto el comprobante 🧾`
   );
 
+  // Compra para el Píxel de Meta: todo pedido confirmado, salvo un pago de
+  // Mercado Pago rechazado.
+  const countsAsPurchase = !(
+    order.paymentMethod === "MERCADOPAGO" && order.paymentStatus === "rejected"
+  );
+
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6 px-5 py-12 sm:px-8">
+      {countsAsPurchase && (
+        <TrackPurchase
+          orderId={order.id}
+          value={order.total}
+          productIds={[...new Set(order.items.map((i) => i.productId))]}
+          numItems={order.items.reduce((sum, i) => sum + i.quantity, 0)}
+        />
+      )}
       <div className="text-center">
         <h1 className="font-display text-3xl font-medium tracking-tight text-white">
           ¡Gracias por tu compra, {order.customerName}!

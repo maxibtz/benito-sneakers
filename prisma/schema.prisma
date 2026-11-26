@@ -137,6 +137,9 @@ model SiteSettings {
   usdRateSource    String    @default("cripto") // referencia: USDT/ARS (Binance)
   usdRateUpdatedAt DateTime?
 
+  // Píxel de Meta (Facebook/Instagram Ads). Editable en Admin › Ajustes.
+  metaPixelId String @default("2294834671449082")
+
   updatedAt     DateTime @updatedAt
 }
 

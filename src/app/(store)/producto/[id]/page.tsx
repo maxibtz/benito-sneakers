@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getProduct } from "@/lib/dal";
 import { AddToCartForm } from "@/components/forms/AddToCartForm";
 import { ProductGallery } from "@/components/ProductGallery";
+import { TrackViewContent } from "@/components/pixel/PixelEvents";
 
 function formatARS(value: number) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(value);
@@ -24,6 +25,11 @@ export default async function ProductDetailPage({
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-12">
+      <TrackViewContent
+        productId={product.id}
+        name={`${product.brand} ${product.model}`}
+        price={effectivePrice}
+      />
       <nav className="mb-6 flex items-center gap-2 text-xs text-[var(--color-store-muted)]">
         <Link href="/" className="transition-colors hover:text-white">
           Catálogo

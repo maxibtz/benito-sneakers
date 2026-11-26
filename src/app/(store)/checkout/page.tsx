@@ -3,6 +3,7 @@ import { getCustomerSession } from "@/lib/customer-auth";
 import { getSiteSettings, getShippingConfig } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { CheckoutForm } from "@/components/forms/CheckoutForm";
+import { TrackInitiateCheckout } from "@/components/pixel/PixelEvents";
 
 export default async function CheckoutPage() {
   const session = await getCustomerSession();
@@ -16,6 +17,7 @@ export default async function CheckoutPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-10 sm:px-8">
+      <TrackInitiateCheckout />
       <h1 className="font-display mb-6 text-3xl font-medium tracking-tight text-white">
         Finalizar compra
       </h1>
