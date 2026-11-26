@@ -62,3 +62,57 @@ export async function sendTrackingEmail(
   );
   return sendMail({ to, subject: "Tu pedido fue despachado — Benito Sneakers", html });
 }
+
+/**
+ * Confirmación al cliente apenas hace el pedido. Si paga por transferencia,
+ * incluye alias, total y cómo mandar el comprobante. También recuerda el
+ * derecho de arrepentimiento (CCyC art. 1111).
+ */
+export async function sendOrderConfirmationEmail(opts: {
+  to: string;
+  name: string;
+  orderId: string;
+  total: number;
+  paymentMethod: string;
+  items: { label: string; quantity: number; unitPrice: number }[];
+  transferAlias: string;
+  whatsappLink: string | null;
+}) {
+  const esc = (v: string) =>
+    v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const fmt = (v: number) =>
+    new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(v);
+  const link = `${getAppUrl()}/pedido-confirmado/${opts.orderId}`;
+  const shortId = opts.orderId.slice(-8);
+
+  const itemsHtml = opts.items
+    .map(
+      (i) =>
+        `<tr><td style="padding:6px 0;">${esc(i.label)} × ${i.quantity}</td><td style="padding:6px 0;text-align:right;">${fmt(i.unitPrice * i.quantity)}</td></tr>`
+    )
+    .join("");
+
+  const paymentHtml =
+    opts.paymentMethod === "TRANSFERENCIA"
+      ? `<div style="background:rgba(139,109,255,0.12);border:1px solid rgba(139,109,255,0.4);border-radius:12px;padding:16px;margin:16px 0;">
+           <p style="margin:0 0 8px;"><strong>Para completar tu compra, transferí ${fmt(opts.total)}</strong></p>
+           ${opts.transferAlias ? `<p style="margin:0 0 8px;">Alias: <strong style="color:#ffffff;">${esc(opts.transferAlias)}</strong></p>` : ""}
+           <p style="margin:0;">Después mandanos el comprobante por WhatsApp con tu número de pedido <strong>#${shortId}</strong>.${
+             opts.whatsappLink ? ` <a href="${opts.whatsappLink}" style="color:#8b6dff;">Abrir WhatsApp</a>` : ""
+           }</p>
+         </div>`
+      : `<p>Te vamos a contactar para coordinar el retiro y el pago.</p>`;
+
+  const html = emailLayout(
+    "¡Recibimos tu pedido! 🛍️",
+    `<p>Hola ${esc(opts.name)}, gracias por tu compra. Tu número de pedido es <strong>#${shortId}</strong>.</p>
+     <table style="width:100%;border-collapse:collapse;font-size:14px;margin:12px 0;">${itemsHtml}
+       <tr><td style="padding:8px 0;border-top:1px solid rgba(255,255,255,0.15);"><strong>Total</strong></td><td style="padding:8px 0;border-top:1px solid rgba(255,255,255,0.15);text-align:right;"><strong>${fmt(opts.total)}</strong></td></tr>
+     </table>
+     ${paymentHtml}
+     <p>Podés ver el estado de tu pedido cuando quieras:</p>
+     <p>${button(link, "Ver mi pedido")}</p>
+     <p style="color:#8b8fa3;font-size:13px;">Tenés 10 días corridos desde que recibís tu compra para arrepentirte sin costo, y 15 días para cambiar el talle o el modelo. Detalles en <a href="${getAppUrl()}/legales/cambios-y-devoluciones" style="color:#8b6dff;">Cambios y devoluciones</a>.</p>`
+  );
+  return sendMail({ to: opts.to, subject: `Recibimos tu pedido #${shortId} — Benito Sneakers`, html });
+}

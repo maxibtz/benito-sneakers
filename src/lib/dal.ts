@@ -393,35 +393,98 @@ export type Differential = { icon: string; title: string; desc: string };
 export type Faq = { q: string; a: string };
 
 const DEFAULT_BENEFITS: Benefit[] = [
-  { icon: "🚚", title: "Envíos a todo el país", desc: "Despachamos a cada rincón." },
-  { icon: "✅", title: "Stock real verificado", desc: "Lo que ves es lo que hay." },
-  { icon: "💳", title: "Pagos flexibles", desc: "Mercado Pago, transferencia y más." },
-  { icon: "📍", title: "Seguí tu pedido", desc: "Estado en vivo, sin llamadas." },
+  {
+    icon: "🚚",
+    title: "Envíos a todo el país",
+    desc: "Ves el costo antes de pagar."
+  },
+  {
+    icon: "✅",
+    title: "Stock real",
+    desc: "Si está en la web, lo tenemos."
+  },
+  {
+    icon: "💸",
+    title: "Transferencia sin recargo",
+    desc: "Pagás el precio que ves, sin comisiones."
+  },
+  {
+    icon: "📍",
+    title: "Seguí tu pedido",
+    desc: "Estado en vivo, sin tener que preguntar."
+  }
 ];
 
 const DEFAULT_PS: PsItem[] = [
-  { problem: "Llegás tarde y el modelo que querías ya se agotó.", solution: "Stock real y actualizado: si lo ves, lo tenés." },
-  { problem: "No sabés si las zapatillas son originales.", solution: "Trabajamos modelos seleccionados y verificados." },
-  { problem: "Te da miedo pagar online.", solution: "Pago protegido con Mercado Pago y seguimiento del pedido." },
+  {
+    problem: "Llegás tarde y el modelo que querías ya se agotó.",
+    solution: "El stock de la web es el real: si lo ves disponible, lo tenemos."
+  },
+  {
+    problem: "No sabés qué talle pedir sin probártelas.",
+    solution: "Te asesoramos por WhatsApp según el modelo, y si no te queda tenés 15 días para cambiarlo."
+  },
+  {
+    problem: "Hay muchos perfumes árabes truchos dando vueltas.",
+    solution: "Los nuestros son 100% originales y llegan con su caja y el sello intacto."
+  },
+  {
+    problem: "Te da miedo pagar y no recibir nada.",
+    solution: "Te damos un número de pedido para seguirlo en vivo, y tenés 10 días para arrepentirte sin costo."
+  }
 ];
 
-const DEFAULT_TESTIMONIALS: Testimonial[] = [
-  { name: "Sofía G.", role: "Compró Nike Jordan Low", text: "Llegaron en 3 días y son tal cual la foto. Re recomendable.", rating: 5 },
-  { name: "Mateo R.", role: "Compró Adidas Samba", text: "Atención de 10, me asesoraron con el talle. Quedé chocho.", rating: 5 },
-  { name: "Valentina P.", role: "Cliente recurrente", text: "Es mi tercera compra. Siempre cumplen. Confianza total.", rating: 5 },
-];
+// Sin testimonios de ejemplo: solo se muestran los reales que se cargan en el panel.
+const DEFAULT_TESTIMONIALS: Testimonial[] = [];
 
 const DEFAULT_DIFFERENTIALS: Differential[] = [
-  { icon: "⭐", title: "Modelos alternativos", desc: "Pares que no encontrás en cualquier lado." },
-  { icon: "🤝", title: "Atención personalizada", desc: "Te ayudamos a elegir por WhatsApp." },
-  { icon: "🔒", title: "Compra protegida", desc: "Pagás seguro y seguís tu pedido en vivo." },
+  {
+    icon: "👟",
+    title: "Elegidas una por una",
+    desc: "Cada par lo elegimos por comodidad y diseño, para usar todo el día."
+  },
+  {
+    icon: "🧴",
+    title: "Perfumes árabes originales",
+    desc: "Fragancias originales, con su caja y el sello intacto."
+  },
+  {
+    icon: "🤝",
+    title: "Atención personalizada",
+    desc: "Te ayudamos a elegir talle, modelo o fragancia por WhatsApp."
+  },
+  {
+    icon: "🔄",
+    title: "Cambios simples",
+    desc: "15 días para cambiar el talle y 10 días para arrepentirte sin costo."
+  }
 ];
 
 const DEFAULT_FAQS: Faq[] = [
-  { q: "¿Hacen envíos a todo el país?", a: "Sí, despachamos a todo el país por correo y a coordinar." },
-  { q: "¿Cómo sé mi talle?", a: "Escribinos por WhatsApp y te asesoramos según el modelo." },
-  { q: "¿Qué medios de pago aceptan?", a: "Mercado Pago, transferencia, efectivo y más." },
-  { q: "¿Puedo seguir mi pedido?", a: "Sí, al comprar te damos un link para ver el estado en vivo." },
+  {
+    q: "¿Hacen envíos a todo el país?",
+    a: "Sí. Enviamos a todo el país y ves el costo y el plazo estimado antes de pagar. Si estás en Formosa, también podés retirar."
+  },
+  {
+    q: "¿Cómo sé mi talle?",
+    a: "Escribinos por WhatsApp con el modelo que te gusta y te decimos qué talle pedir. Si no te queda, tenés 15 días para cambiarlo."
+  },
+  {
+    q: "¿Cómo pago?",
+    a: "Por transferencia bancaria, sin recargo: al confirmar el pedido te mostramos el alias y nos mandás el comprobante por WhatsApp. Si retirás en persona, también podés pagar en efectivo."
+  },
+  {
+    q: "¿Los perfumes son originales?",
+    a: "Sí. Todos nuestros perfumes árabes son originales y llegan con su caja y el sello intacto."
+  },
+  {
+    q: "¿Puedo cambiar o devolver mi compra?",
+    a: "Sí. Tenés 15 días para cambiar el talle o el modelo, y 10 días para arrepentirte sin costo. Está todo explicado en Cambios y devoluciones."
+  },
+  {
+    q: "¿Puedo seguir mi pedido?",
+    a: "Sí. Al comprar te damos un link para ver el estado de tu pedido en todo momento."
+  }
 ];
 
 function parseJson<T>(raw: string, fallback: T): T {
@@ -467,7 +530,7 @@ export async function getHomeContent() {
     categoriesTitle: c.categoriesTitle || "Categorías principales",
     categoriesSubtitle: c.categoriesSubtitle,
     categories: parseJson<HomeCategory[]>(c.categories, []),
-    differentialsTitle: c.differentialsTitle || "Por qué somos tu mejor opción",
+    differentialsTitle: c.differentialsTitle || "Por qué comprar en Benito",
     differentialsSubtitle: c.differentialsSubtitle,
     differentials: parseJson<Differential[]>(c.differentials, DEFAULT_DIFFERENTIALS),
     ugcTitle: c.ugcTitle || "Nuestros clientes",
@@ -476,8 +539,8 @@ export async function getHomeContent() {
     faqTitle: c.faqTitle || "Preguntas frecuentes",
     faqSubtitle: c.faqSubtitle,
     faqs: parseJson<Faq[]>(c.faqs, DEFAULT_FAQS),
-    finalCtaTitle: c.finalCtaTitle || "¿Listo para tu próximo par?",
-    finalCtaText: c.finalCtaText || "Elegí el tuyo y, si tenés dudas, escribinos: te asesoramos por WhatsApp.",
+    finalCtaTitle: c.finalCtaTitle || "¿Ya elegiste el tuyo?",
+    finalCtaText: c.finalCtaText || "Si tenés dudas con el talle o la fragancia, escribinos por WhatsApp y te ayudamos a elegir.",
     finalCtaButton: c.finalCtaButton || "Ver catálogo",
     finalCtaLink: c.finalCtaLink || "#catalogo",
   };

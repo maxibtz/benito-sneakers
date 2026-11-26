@@ -149,8 +149,8 @@ export default async function ExchangesPage() {
           <li>
             <strong className="text-white">Reintegro:</strong> te devolvemos el total que pagaste,
             incluido el envío original, por el mismo medio de pago, dentro de los 10 días hábiles de
-            recibido el producto. Si pagaste con Mercado Pago, el reintegro se hace por Mercado Pago;
-            si pagaste por transferencia, a la cuenta que nos indiques a tu nombre.
+            recibido el producto. Si pagaste por transferencia, te lo transferimos a la cuenta que nos
+            indiques a tu nombre.
           </li>
           <li>
             <strong className="text-white">Excepción, perfumes abiertos:</strong> los perfumes y

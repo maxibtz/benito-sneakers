@@ -7,10 +7,11 @@ import { requireAdmin } from "@/lib/auth";
 import { getCustomerSession } from "@/lib/customer-auth";
 import { notifyNewOrder } from "@/lib/notify";
 import { evaluateCoupon } from "@/lib/coupon";
-import { getShippingConfig } from "@/lib/dal";
+import { getShippingConfig, getSiteSettings } from "@/lib/dal";
 import { computeShipping, canPickup, type ShippingMethod } from "@/lib/shipping";
 import { quoteZipnova, isZipnovaConfigured } from "@/lib/zipnova";
-import { sendTrackingEmail, sendPaymentReceivedEmail } from "@/lib/emails";
+import { sendTrackingEmail, sendPaymentReceivedEmail, sendOrderConfirmationEmail } from "@/lib/emails";
+import { waLink } from "@/lib/whatsapp";
 import { getClientIp, rateLimit, waitText } from "@/lib/rate-limit";
 import type { OrderStatus, PaymentMethod } from "@/generated/prisma/enums";
 
@@ -317,7 +318,7 @@ async function createOrderInternal(input: CreateOrderInput) {
           })),
         },
       },
-      include: { items: { include: { product: true } } },
+      include: { items: { include: { product: true, variant: true } } },
     });
 
     for (const item of items) {
@@ -346,6 +347,32 @@ async function createOrderInternal(input: CreateOrderInput) {
     total: order.total,
     itemsSummary,
   }).catch((err) => console.error("[orders] error al notificar el pedido:", err));
+
+  // Confirmación al cliente (alias y total si paga por transferencia).
+  // Tampoco se espera: el pedido ya está hecho.
+  if (order.email) {
+    getSiteSettings()
+      .then((settings) =>
+        sendOrderConfirmationEmail({
+          to: order.email,
+          name: order.customerName,
+          orderId: order.id,
+          total: order.total,
+          paymentMethod: order.paymentMethod,
+          items: order.items.map((item) => ({
+            label: `${item.product.brand} ${item.product.model} (talle ${item.variant.size})`,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+          })),
+          transferAlias: settings.transferAlias,
+          whatsappLink: waLink(
+            settings.whatsapp,
+            `¡Hola! Te mando el comprobante de mi pedido #${order.id.slice(-8)} 🧾`
+          ),
+        })
+      )
+      .catch((err) => console.error("[orders] error al enviar la confirmación al cliente:", err));
+  }
 
   revalidatePath("/admin/pedidos");
   return order;

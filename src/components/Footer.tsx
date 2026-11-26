@@ -50,7 +50,7 @@ export async function Footer() {
               className="h-14 w-auto"
             />
             <p className="mt-3 max-w-xs text-sm leading-relaxed text-[var(--color-store-muted)]">
-              Zapatillas alternativas. Modelos únicos, pares contados, envíos a todo el país.
+              Zapatillas cómodas, perfumes árabes 100% originales y ropa. Envíos a todo el país.
             </p>
             {settings.transferAlias ? (
               <p className="mt-4 text-xs text-[var(--color-store-muted)]">

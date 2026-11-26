@@ -46,10 +46,6 @@ export default async function PrivacyPage() {
             navegador (por ejemplo, la dirección IP). Ver la sección 6.
           </li>
         </ul>
-        <p>
-          No recibimos ni guardamos los datos de tu tarjeta: los pagos con tarjeta los procesa
-          Mercado Pago.
-        </p>
       </LegalSection>
 
       <LegalSection title="3. Para qué los usamos">
@@ -79,9 +75,6 @@ export default async function PrivacyPage() {
       <LegalSection title="5. Con quién los compartimos">
         <p>Solo con quienes necesitamos para funcionar, y únicamente los datos que cada uno necesita:</p>
         <ul className="ml-5 list-disc space-y-2">
-          <li>
-            <strong className="text-white">Mercado Pago:</strong> para procesar los pagos.
-          </li>
           <li>
             <strong className="text-white">Empresas de envío y logística:</strong> para cotizar y
             entregar tu pedido.

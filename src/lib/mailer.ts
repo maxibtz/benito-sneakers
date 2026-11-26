@@ -75,7 +75,7 @@ export function emailLayout(title: string, bodyHtml: string): string {
         ${bodyHtml}
       </div>
       <div style="padding:18px 28px;border-top:1px solid rgba(255,255,255,0.08);color:#8b8fa3;font-size:12px;">
-        Benito Sneakers — Zapatillas alternativas
+        Benito Sneakers — Zapatillas, perfumes árabes y ropa
       </div>
     </div>
   </div>`;

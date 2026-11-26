@@ -23,7 +23,7 @@ export default async function StoreHomePage() {
   const heroHref = featured ? `/producto/${featured.id}` : "#catalogo";
   const heroTitle = settings.heroTitle?.trim();
   const heroSubtitle = settings.heroSubtitle?.trim();
-  const heroBadge = settings.heroBadge?.trim() || "Zapatillas alternativas";
+  const heroBadge = settings.heroBadge?.trim() || "Zapatillas · Perfumes árabes · Ropa";
   const heroCtaText = settings.heroCtaText?.trim() || "Ver catálogo";
   const heroCtaLink = settings.heroCtaLink?.trim() || "#catalogo";
 
@@ -54,12 +54,7 @@ export default async function StoreHomePage() {
     <div className="flex flex-col">
       <ScrollReveals />
       <Marquee
-        items={[
-          "Envío a todo el país",
-          "Transferencia sin recargo",
-          "Stock real verificado",
-          "Modelos alternativos",
-        ]}
+        items={["Envíos a todo el país","Transferencia sin recargo","Perfumes árabes 100% originales","Cambios en 15 días","Te asesoramos por WhatsApp"]}
       />
 
       {/* 1 — HERO */}
@@ -82,7 +77,7 @@ export default async function StoreHomePage() {
             </h1>
             <p className="mt-6 max-w-md text-lg leading-relaxed text-[var(--color-store-muted)]">
               {heroSubtitle ||
-                "Zapatillas alternativas, perfumes árabes originales y ropa, elegidos uno por uno. Te asesoramos por WhatsApp y enviamos a todo el país."}
+                "Zapatillas cómodas para todo el día, perfumes árabes 100% originales y ropa, elegidos uno por uno. Te asesoramos por WhatsApp y te lo mandamos a todo el país."}
             </p>
             <div className="mt-9 flex flex-wrap items-center gap-4">
               <Link

@@ -343,7 +343,7 @@ export function HeroForm({
           id="heroBadge"
           name="heroBadge"
           defaultValue={defaults.heroBadge}
-          placeholder="Zapatillas alternativas"
+          placeholder="Zapatillas · Perfumes árabes · Ropa"
           className={inputClass}
         />
       </div>

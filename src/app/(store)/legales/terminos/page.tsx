@@ -84,10 +84,6 @@ export default async function TermsPage() {
       <LegalSection title="6. Medios de pago">
         <ul className="ml-5 list-disc space-y-2">
           <li>
-            <strong className="text-white">Mercado Pago:</strong> el pago lo procesa Mercado Pago.
-            Nosotros no vemos ni guardamos los datos de tu tarjeta.
-          </li>
-          <li>
             <strong className="text-white">Transferencia bancaria:</strong> te mostramos el alias
             al confirmar el pedido. El pedido se prepara cuando recibimos el comprobante y se
             acredita la transferencia.

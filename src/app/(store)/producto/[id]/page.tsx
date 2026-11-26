@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getProduct } from "@/lib/dal";
+import { getProduct, getSiteSettings } from "@/lib/dal";
+import { waLink } from "@/lib/whatsapp";
 
 /** Título, descripción y foto propios de cada producto al compartir el link. */
 export async function generateMetadata({
@@ -58,6 +59,12 @@ export default async function ProductDetailPage({
   const effectivePrice = onSale ? product.salePrice! : product.price;
   const discountPct = onSale ? Math.round((1 - product.salePrice! / product.price) * 100) : 0;
 
+  const settings = await getSiteSettings();
+  const sizeHelpLink = waLink(
+    settings.whatsapp,
+    `¡Hola! Quiero consultar el talle de ${product.brand} ${product.model} 👟`
+  );
+
   return (
     <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-12">
       <TrackViewContent
@@ -107,7 +114,7 @@ export default async function ProductDetailPage({
               <span className="text-3xl font-medium text-white">{formatARS(product.price)}</span>
             )}
             <span className="w-full text-sm text-[var(--color-store-muted)]">
-              o 3 cuotas sin interés
+              Pagás por transferencia, sin recargo
             </span>
           </div>
 
@@ -126,27 +133,48 @@ export default async function ProductDetailPage({
             variants={product.variants.map((v) => ({ id: v.id, size: v.size, stock: v.stock }))}
           />
 
+          {/* Consulta de talle: la objeción más común en ropa y calzado. */}
+          {sizeHelpLink && (
+            <a
+              href={sizeHelpLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 flex items-center justify-center gap-2 rounded-full border border-[#25D366]/50 px-5 py-3 text-sm font-medium text-white transition hover:bg-[#25D366]/10"
+            >
+              💬 ¿Dudas con el talle? Escribinos por WhatsApp
+            </a>
+          )}
+
           <div className="mt-7 grid grid-cols-3 gap-3 text-center">
             {[
-              { icon: "🚚", label: "Envíos a todo el país" },
-              { icon: "🔒", label: "Compra protegida" },
-              { icon: "📦", label: "Stock real" },
-            ].map((f) => (
-              <div
-                key={f.label}
-                className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
-              >
-                <div className="text-lg">{f.icon}</div>
-                <p className="mt-1.5 text-[11px] leading-tight text-[var(--color-store-muted)]">
-                  {f.label}
-                </p>
-              </div>
-            ))}
+              { icon: "🚚", label: "Envíos a todo el país", href: null },
+              { icon: "🔄", label: "Cambios en 15 días", href: "/legales/cambios-y-devoluciones" },
+              { icon: "📦", label: "Stock real", href: null },
+            ].map((f) => {
+              const inner = (
+                <>
+                  <div className="text-lg">{f.icon}</div>
+                  <p className="mt-1.5 text-[11px] leading-tight text-[var(--color-store-muted)]">
+                    {f.label}
+                  </p>
+                </>
+              );
+              const cls = "rounded-2xl border border-white/10 bg-white/[0.03] p-4";
+              return f.href ? (
+                <Link key={f.label} href={f.href} className={`${cls} transition hover:border-white/30`}>
+                  {inner}
+                </Link>
+              ) : (
+                <div key={f.label} className={cls}>
+                  {inner}
+                </div>
+              );
+            })}
           </div>
 
           <p className="mt-5 text-xs leading-relaxed text-[var(--color-store-muted)]">
-            Pagá online con Mercado Pago o coordiná transferencia, efectivo, link de tarjeta,
-            Pago Fácil/Rapipago al finalizar tu compra.
+            Pagás por transferencia bancaria sin recargo, o en efectivo si retirás en persona.
+            Tenés 10 días desde que lo recibís para arrepentirte sin costo.
           </p>
         </div>
       </div>

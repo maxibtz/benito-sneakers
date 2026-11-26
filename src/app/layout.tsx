@@ -20,12 +20,12 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 const SITE_DESCRIPTION =
-  "Zapatillas alternativas, perfumes árabes originales y ropa. Selección personal, asesoramiento por WhatsApp y envíos a todo el país.";
+  "Zapatillas cómodas para todo el día, perfumes árabes 100% originales y ropa. Te asesoramos por WhatsApp y enviamos a todo el país.";
 
 export const metadata: Metadata = {
   // Base para que las imágenes de la vista previa salgan con URL completa.
   metadataBase: new URL(process.env.APP_URL || "https://benitosneakers.shop"),
-  title: "Benito Sneakers — Zapatillas alternativas, perfumes árabes originales y ropa",
+  title: "Benito Sneakers — Zapatillas, perfumes árabes originales y ropa",
   description: SITE_DESCRIPTION,
   // Vista previa al compartir un link (WhatsApp, Instagram, Facebook).
   openGraph: {
