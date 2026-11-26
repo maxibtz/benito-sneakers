@@ -23,6 +23,10 @@ export const metadata: Metadata = {
   title: "Benito Sneakers — Zapatillas alternativas",
   description:
     "Zapatillas alternativas, modelos únicos y stock limitado. Encontrá tu próximo par favorito en Benito Sneakers.",
+  other: {
+    // Verificación del dominio benitosneakers.shop en Meta Business.
+    "facebook-domain-verification": "5msfrz7umteicubawe4yiz7xu6se2o",
+  },
 };
 
 // Toda la app se renderiza en el momento (no se pre-genera en el build).
