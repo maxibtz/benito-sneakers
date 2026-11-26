@@ -527,7 +527,7 @@ export async function getHomeContent() {
     testimonialsTitle: c.testimonialsTitle || "Lo que dicen nuestros clientes",
     testimonialsSubtitle: c.testimonialsSubtitle,
     testimonials: parseJson<Testimonial[]>(c.testimonials, DEFAULT_TESTIMONIALS),
-    categoriesTitle: c.categoriesTitle || "Categorías principales",
+    categoriesTitle: c.categoriesTitle || "Elegí por marca",
     categoriesSubtitle: c.categoriesSubtitle,
     categories: parseJson<HomeCategory[]>(c.categories, []),
     differentialsTitle: c.differentialsTitle || "Por qué comprar en Benito",
