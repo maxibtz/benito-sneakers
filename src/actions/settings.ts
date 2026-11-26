@@ -363,3 +363,58 @@ export async function updatePromotionAction(
   revalidatePath("/", "layout");
   return { ok: true };
 }
+
+/** Datos legales del titular + QR de Data Fiscal (se pega el código que da ARCA). */
+export async function updateLegalAction(
+  _prev: SettingsState,
+  formData: FormData
+): Promise<SettingsState> {
+  await requireAdmin();
+  const legalName = String(formData.get("legalName") ?? "").trim().slice(0, 160);
+  const cuitDigits = String(formData.get("legalCuit") ?? "").replace(/\D/g, "");
+  const legalAddress = String(formData.get("legalAddress") ?? "").trim().slice(0, 240);
+  const legalEmail = String(formData.get("legalEmail") ?? "").trim().toLowerCase().slice(0, 160);
+  const dataFiscalRaw = String(formData.get("dataFiscal") ?? "").trim();
+
+  if (cuitDigits && cuitDigits.length !== 11) {
+    return { error: "El CUIT tiene que tener 11 números (ej: 20-12345678-9)." };
+  }
+  if (legalEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(legalEmail)) {
+    return { error: "Revisá el email legal: parece incompleto." };
+  }
+  const legalCuit = cuitDigits
+    ? `${cuitDigits.slice(0, 2)}-${cuitDigits.slice(2, 10)}-${cuitDigits.slice(10)}`
+    : "";
+
+  // Data Fiscal: ARCA entrega un <a href="..."><img src="..."></a>. Guardamos
+  // solo el link y la imagen, y solo si son de dominios oficiales.
+  let dataFiscalUrl = "";
+  let dataFiscalImg = "";
+  if (dataFiscalRaw) {
+    const href = /href\s*=\s*["']([^"']+)["']/i.exec(dataFiscalRaw)?.[1] ?? "";
+    const src = /src\s*=\s*["']([^"']+)["']/i.exec(dataFiscalRaw)?.[1] ?? "";
+    const official = (u: string) => {
+      try {
+        const host = new URL(u).hostname;
+        return /(^|\.)afip\.gob\.ar$|(^|\.)arca\.gob\.ar$/.test(host);
+      } catch {
+        return false;
+      }
+    };
+    if (!official(href) || !official(src)) {
+      return { error: "Pegá el código de Data Fiscal tal cual te lo da ARCA (con el link y la imagen de afip.gob.ar o arca.gob.ar)." };
+    }
+    dataFiscalUrl = href.replace(/^http:/, "https:");
+    dataFiscalImg = src.replace(/^http:/, "https:");
+  }
+
+  await db.siteSettings.upsert({
+    where: { id: "default" },
+    update: { legalName, legalCuit, legalAddress, legalEmail, dataFiscalUrl, dataFiscalImg },
+    create: { id: "default", legalName, legalCuit, legalAddress, legalEmail, dataFiscalUrl, dataFiscalImg },
+  });
+
+  revalidatePath("/admin/ajustes");
+  revalidatePath("/", "layout");
+  return { ok: true };
+}

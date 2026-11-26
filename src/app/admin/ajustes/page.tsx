@@ -1,6 +1,7 @@
 import { getSiteSettings, getPromotion, getProducts } from "@/lib/dal";
 import {
   ContactForm,
+  LegalForm,
   PromotionForm,
   AppearanceForm,
   MercadoPagoForm,
@@ -69,6 +70,17 @@ export default async function AjustesPage() {
           tiktok: settings.tiktok,
           transferAlias: settings.transferAlias,
           metaPixelId: settings.metaPixelId,
+        }}
+      />
+
+      <LegalForm
+        defaults={{
+          legalName: settings.legalName,
+          legalCuit: settings.legalCuit,
+          legalAddress: settings.legalAddress,
+          legalEmail: settings.legalEmail,
+          dataFiscalUrl: settings.dataFiscalUrl,
+          dataFiscalImg: settings.dataFiscalImg,
         }}
       />
 

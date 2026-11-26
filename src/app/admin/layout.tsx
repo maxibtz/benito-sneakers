@@ -14,6 +14,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/admin/productos", label: "Productos" },
       { href: "/admin/secciones", label: "Secciones" },
       { href: "/admin/pedidos", label: "Pedidos" },
+      { href: "/admin/arrepentimientos", label: "Arrepentimientos" },
       { href: "/admin/ventas", label: "Ventas manuales" },
       { href: "/admin/clientes", label: "Clientes" },
       { href: "/admin/cupones", label: "Cupones" },

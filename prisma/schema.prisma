@@ -140,6 +140,15 @@ model SiteSettings {
   // Píxel de Meta (Facebook/Instagram Ads). Editable en Admin › Ajustes.
   metaPixelId String @default("2294834671449082")
 
+  // Datos legales del titular (Términos, Privacidad, Defensa del Consumidor).
+  // Editables en Admin › Ajustes › Datos legales. Vacíos = "en trámite".
+  legalName     String @default("") // nombre y apellido o razón social
+  legalCuit     String @default("")
+  legalAddress  String @default("") // domicilio fiscal
+  legalEmail    String @default("") // email para reclamos y datos personales
+  dataFiscalUrl String @default("") // link del QR "Data Fiscal" de ARCA
+  dataFiscalImg String @default("") // imagen del QR "Data Fiscal" de ARCA
+
   updatedAt     DateTime @updatedAt
 }
 
@@ -283,4 +292,22 @@ model ManualSale {
   cost          Float    @default(0) // costo total de la mercadería (para la ganancia)
   note          String   @default("")
   createdAt     DateTime @default(now())
+}
+
+// Solicitudes del "Botón de arrepentimiento" (Res. 424/2020 SCI).
+// Cada una recibe un código que se le informa al cliente en el momento.
+model RevocationRequest {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  email     String
+  phone     String
+  dni       String   @default("")
+  orderRef  String   @default("") // número de pedido que indica el cliente
+  orderId   String?  // pedido encontrado en el sistema, si coincide
+  details   String   @default("")
+  status    String   @default("PENDIENTE") // PENDIENTE | EN_CURSO | RESUELTO | RECHAZADO
+  adminNote String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

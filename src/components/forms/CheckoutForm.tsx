@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/contexts/CartContext";
 import { createOrderAction } from "@/actions/orders";
+import { REVOCATION_DAYS } from "@/lib/legal-constants";
 import { validateCouponAction } from "@/actions/coupon";
 import {
   AR_PROVINCES,
@@ -498,6 +499,28 @@ export function CheckoutForm({
           <span className="text-xl font-medium text-white">{formatARS(finalTotal)}</span>
         </div>
       </div>
+
+      {/* CCyC art. 1111: informar el derecho de revocación en forma destacada. */}
+      <p className="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-xs leading-relaxed text-white/75">
+        Al confirmar aceptás los{" "}
+        <a href="/legales/terminos" target="_blank" className="text-white underline underline-offset-2">
+          Términos y condiciones
+        </a>
+        .{" "}
+        <strong className="text-white">
+          Tenés {REVOCATION_DAYS} días corridos desde que recibís tu compra para arrepentirte sin
+          costo.
+        </strong>{" "}
+        Los perfumes se devuelven solo cerrados y con el sello intacto. Ver{" "}
+        <a
+          href="/legales/cambios-y-devoluciones"
+          target="_blank"
+          className="text-white underline underline-offset-2"
+        >
+          Cambios y devoluciones
+        </a>
+        .
+      </p>
 
       <button
         type="submit"

@@ -9,6 +9,7 @@ import {
   updateHeroAction,
   updateShippingAction,
   updateEmailAction,
+  updateLegalAction,
   type SettingsState,
 } from "@/actions/settings";
 import { AR_PROVINCES } from "@/lib/shipping";
@@ -839,6 +840,121 @@ export function PromotionForm({
           className="w-fit rounded-md bg-[var(--color-navy)] px-5 py-2 font-semibold text-white hover:bg-[var(--color-navy-light)] disabled:opacity-60"
         >
           {pending ? "Guardando..." : "Guardar promoción"}
+        </button>
+        {state.ok && <span className="text-sm text-green-600 dark:text-green-400">✓ Guardado</span>}
+        {state.error && <span className="text-sm text-red-600 dark:text-red-400">{state.error}</span>}
+      </div>
+    </form>
+  );
+}
+
+/** Datos legales del titular: se muestran en Términos, Privacidad y el footer. */
+export function LegalForm({
+  defaults,
+}: {
+  defaults: {
+    legalName: string;
+    legalCuit: string;
+    legalAddress: string;
+    legalEmail: string;
+    dataFiscalUrl: string;
+    dataFiscalImg: string;
+  };
+}) {
+  const [state, action, pending] = useActionState(updateLegalAction, initial);
+  const incomplete = !defaults.legalName || !defaults.legalCuit || !defaults.legalAddress;
+  const existingSnippet = defaults.dataFiscalUrl
+    ? `<a href="${defaults.dataFiscalUrl}"><img src="${defaults.dataFiscalImg}"></a>`
+    : "";
+
+  return (
+    <form action={action} className={`${cardClass} flex flex-col gap-4`}>
+      <div>
+        <h2 className="text-lg font-semibold text-[var(--color-navy)] dark:text-white">
+          Datos legales
+        </h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Aparecen en Términos y condiciones, Política de privacidad y el pie de la tienda. Mientras
+          estén vacíos, la tienda muestra &quot;en trámite&quot;.
+        </p>
+        {incomplete && (
+          <p className="mt-2 text-sm font-semibold text-amber-700 dark:text-amber-300">
+            Completá nombre, CUIT y domicilio apenas tengas el alta en ARCA.
+          </p>
+        )}
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="flex flex-col gap-1">
+          <label className={labelClass} htmlFor="legalName">
+            Nombre y apellido (o razón social)
+          </label>
+          <input id="legalName" name="legalName" defaultValue={defaults.legalName} className={inputClass} />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className={labelClass} htmlFor="legalCuit">
+            CUIT
+          </label>
+          <input
+            id="legalCuit"
+            name="legalCuit"
+            inputMode="numeric"
+            placeholder="20-12345678-9"
+            defaultValue={defaults.legalCuit}
+            className={inputClass}
+          />
+        </div>
+        <div className="flex flex-col gap-1 sm:col-span-2">
+          <label className={labelClass} htmlFor="legalAddress">
+            Domicilio fiscal
+          </label>
+          <input
+            id="legalAddress"
+            name="legalAddress"
+            placeholder="Calle 123, Formosa, Formosa"
+            defaultValue={defaults.legalAddress}
+            className={inputClass}
+          />
+        </div>
+        <div className="flex flex-col gap-1 sm:col-span-2">
+          <label className={labelClass} htmlFor="legalEmail">
+            Email para reclamos y datos personales
+          </label>
+          <input
+            id="legalEmail"
+            name="legalEmail"
+            type="email"
+            defaultValue={defaults.legalEmail}
+            placeholder="Si lo dejás vacío se usa el email de envío configurado"
+            className={inputClass}
+          />
+        </div>
+        <div className="flex flex-col gap-1 sm:col-span-2">
+          <label className={labelClass} htmlFor="dataFiscal">
+            Código del QR &quot;Data Fiscal&quot; de ARCA
+          </label>
+          <textarea
+            id="dataFiscal"
+            name="dataFiscal"
+            rows={3}
+            defaultValue={existingSnippet}
+            placeholder='Pegá acá el código completo que te da ARCA (empieza con <a href="...)'
+            className={`${inputClass} font-mono text-xs`}
+          />
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            Se obtiene en ARCA, servicio &quot;Formulario 960/D - Data Fiscal&quot;. El QR aparece
+            solo en el pie de la tienda.
+          </span>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <button
+          type="submit"
+          disabled={pending}
+          className="w-fit rounded-md bg-[var(--color-navy)] px-5 py-2 font-semibold text-white hover:bg-[var(--color-navy-light)] disabled:opacity-60"
+        >
+          {pending ? "Guardando..." : "Guardar datos legales"}
         </button>
         {state.ok && <span className="text-sm text-green-600 dark:text-green-400">✓ Guardado</span>}
         {state.error && <span className="text-sm text-red-600 dark:text-red-400">{state.error}</span>}
