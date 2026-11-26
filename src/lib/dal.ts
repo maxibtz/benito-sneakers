@@ -477,7 +477,7 @@ export async function getHomeContent() {
     faqSubtitle: c.faqSubtitle,
     faqs: parseJson<Faq[]>(c.faqs, DEFAULT_FAQS),
     finalCtaTitle: c.finalCtaTitle || "¿Listo para tu próximo par?",
-    finalCtaText: c.finalCtaText || "Encontrá el tuyo antes de que se agote.",
+    finalCtaText: c.finalCtaText || "Elegí el tuyo y, si tenés dudas, escribinos: te asesoramos por WhatsApp.",
     finalCtaButton: c.finalCtaButton || "Ver catálogo",
     finalCtaLink: c.finalCtaLink || "#catalogo",
   };

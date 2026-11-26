@@ -82,7 +82,7 @@ export default async function StoreHomePage() {
             </h1>
             <p className="mt-6 max-w-md text-lg leading-relaxed text-[var(--color-store-muted)]">
               {heroSubtitle ||
-                "Modelos únicos y pares contados. Diseño que se nota, sin gritar. Encontrá el tuyo antes de que se agote."}
+                "Zapatillas alternativas, perfumes árabes originales y ropa, elegidos uno por uno. Te asesoramos por WhatsApp y enviamos a todo el país."}
             </p>
             <div className="mt-9 flex flex-wrap items-center gap-4">
               <Link
