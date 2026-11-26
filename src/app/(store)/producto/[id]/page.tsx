@@ -1,6 +1,41 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getProduct } from "@/lib/dal";
+
+/** Título, descripción y foto propios de cada producto al compartir el link. */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const product = await getProduct(id);
+  if (!product || !product.active) return { title: "Producto no encontrado — Benito Sneakers" };
+
+  const name = `${product.brand} ${product.model}`;
+  const onSale = product.salePrice != null && product.salePrice < product.price;
+  const price = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(
+    onSale ? product.salePrice! : product.price
+  );
+  const description = `${price} · ${product.description}`.replace(/\s+/g, " ").slice(0, 200);
+  const image = product.images?.split(",").filter(Boolean)[0];
+
+  return {
+    title: `${name} — Benito Sneakers`,
+    description,
+    alternates: { canonical: `/producto/${product.id}` },
+    openGraph: {
+      type: "website",
+      locale: "es_AR",
+      siteName: "Benito Sneakers",
+      title: name,
+      description,
+      url: `/producto/${product.id}`,
+      ...(image ? { images: [{ url: image, alt: name }] } : {}),
+    },
+  };
+}
 import { AddToCartForm } from "@/components/forms/AddToCartForm";
 import { ProductGallery } from "@/components/ProductGallery";
 import { TrackViewContent } from "@/components/pixel/PixelEvents";

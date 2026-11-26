@@ -19,10 +19,24 @@ const spaceGrotesk = Space_Grotesk({
   weight: ["500", "600", "700"],
 });
 
+const SITE_DESCRIPTION =
+  "Zapatillas alternativas, perfumes árabes originales y ropa. Selección personal, asesoramiento por WhatsApp y envíos a todo el país.";
+
 export const metadata: Metadata = {
-  title: "Benito Sneakers — Zapatillas alternativas",
-  description:
-    "Zapatillas alternativas, modelos únicos y stock limitado. Encontrá tu próximo par favorito en Benito Sneakers.",
+  // Base para que las imágenes de la vista previa salgan con URL completa.
+  metadataBase: new URL(process.env.APP_URL || "https://benitosneakers.shop"),
+  title: "Benito Sneakers — Zapatillas alternativas, perfumes árabes originales y ropa",
+  description: SITE_DESCRIPTION,
+  // Vista previa al compartir un link (WhatsApp, Instagram, Facebook).
+  openGraph: {
+    type: "website",
+    locale: "es_AR",
+    siteName: "Benito Sneakers",
+    title: "Benito Sneakers",
+    description: SITE_DESCRIPTION,
+    images: [{ url: "/brand/logo-card.png", width: 1200, height: 544, alt: "Benito Sneakers" }],
+  },
+  twitter: { card: "summary_large_image" },
   other: {
     // Verificación del dominio benitosneakers.shop en Meta Business.
     "facebook-domain-verification": "5msfrz7umteicubawe4yiz7xu6se2o",
